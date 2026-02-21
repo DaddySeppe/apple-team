@@ -1,0 +1,820 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		003245B60967DD2D628DD866 /* MissionZebraRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = 014EC972FA6F0BFB4A114D0C /* MissionZebraRepository.swift */; };
+		063881F3F275BCA9ECB60434 /* Typography.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E4547FD1B58F6B561B202FB /* Typography.swift */; };
+		0C98D674EFB9D458AEA5F354 /* ThemeExtensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 15D9C547BC2ED3C1F2844417 /* ThemeExtensions.swift */; };
+		10DA09A269923F848426644C /* WelcomeScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 89DAD3C693E60B37105367BE /* WelcomeScreen.swift */; };
+		1C1BD74C435ED777F2AFF1B9 /* AuthRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = 08AAA8EA53291A0A5123FCCB /* AuthRepository.swift */; };
+		21B39A24B585156E60E5B58F /* SplashScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4822CC8DE3C536F57B311499 /* SplashScreen.swift */; };
+		2644472BB93472AA934AFD46 /* TasksTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = 711EF956267E1A2FB115D78A /* TasksTab.swift */; };
+		278BFA13746A5D5F024327CA /* PinSecurity.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BA5AB0DEBC1CD2D5CA2390F /* PinSecurity.swift */; };
+		30971443809CF697B0445939 /* ChildrenTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02E90198D4DBED46D817B619 /* ChildrenTab.swift */; };
+		3223A86DB7E4D16E9FC6A309 /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = 3EC4931B4754F131671A446D /* FirebaseAuth */; };
+		323A1FC1AB2A584338978DE6 /* ParentOnlineSafetyScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9D8530F962FA6A2C3A66277 /* ParentOnlineSafetyScreen.swift */; };
+		324A0D0423601F13127045FF /* SecurityTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = 42A1C095C0A38C424E74A127 /* SecurityTab.swift */; };
+		32A75D6AA21F9EF0FA8A2BF6 /* ParentDashboardViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8BA9D54072604DAAB965CE95 /* ParentDashboardViewModel.swift */; };
+		35109E18FC5BDAB69E47905F /* DeviceUsageRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = 92D9B7FDCD9BDF192063E205 /* DeviceUsageRepository.swift */; };
+		3F59FDDAA4B2D27200AD89C3 /* TaskCalendarScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A70679F37AB260C88FF3BCB /* TaskCalendarScreen.swift */; };
+		426626C6EEDB8F0B3325479C /* DeviceModeScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B926B2844174C2D30B41B2F /* DeviceModeScreen.swift */; };
+		4C69CA64E7A84DE5B10A5462 /* TaskFirebaseRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = 96BF43E9980DFFC31A16FFF2 /* TaskFirebaseRepository.swift */; };
+		4C7F89610E4454593C8B4619 /* ChildScreenTimeTracker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 474B697C8A916FBD1EEDE0EF /* ChildScreenTimeTracker.swift */; };
+		4D7B70011F5C4D54AE9581F8 /* FirebaseMessaging in Frameworks */ = {isa = PBXBuildFile; productRef = 3F2EFC55A85E401E29620D53 /* FirebaseMessaging */; };
+		4E02E759360A4234AB8878F3 /* Child.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E5AC091DC9B410FC049B10E /* Child.swift */; };
+		50C11D009CBDECD313B00B4C /* Backgrounds.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3E182D346585A8E925C154D1 /* Backgrounds.swift */; };
+		516190CC7773A8B2E15B4969 /* ParentPinManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E836588392B2258828004B3 /* ParentPinManager.swift */; };
+		52710521D717B4523061A728 /* Badges.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A052E0D380CAABFE34F3734 /* Badges.swift */; };
+		53A4D6D877940C34AED0ACEC /* Accessory.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6540E8B352E1EE80944522B6 /* Accessory.swift */; };
+		56BBCF43701970CEF8047C2E /* RiskSignal.swift in Sources */ = {isa = PBXBuildFile; fileRef = 46AC263E3E9D93D7C2A87768 /* RiskSignal.swift */; };
+		5A5E239406494166DBBD83D5 /* SafetyRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = E13BAB7BFACC350FA9B5607F /* SafetyRepository.swift */; };
+		5F69E49A8A6E404D198C2521 /* ChildDashboardViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3F78F0DDD992D84D312B6F21 /* ChildDashboardViewModel.swift */; };
+		675FB588BE2BFDFE1CB06354 /* Colors.swift in Sources */ = {isa = PBXBuildFile; fileRef = C046E909C0D3604F57AF89AA /* Colors.swift */; };
+		6974467F1E260E9EC0773ED7 /* SessionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06DA2AC5CC63CE8EA2E571DA /* SessionManager.swift */; };
+		6A299EC85FFDB0EF323A01BE /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = E4FBE4943EA6A073E256199B /* GoogleService-Info.plist */; };
+		6EC2A60DC13A5611FF06B6FC /* ParentPremiumDashboardScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01855993AC90ADC0361587D8 /* ParentPremiumDashboardScreen.swift */; };
+		7164E3D82EFA7F4448B252CE /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1C9B6769DED19CF3DDE20044 /* Theme.swift */; };
+		72AF5B98B3AB9F48F04EC745 /* Tooltips.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1ED32F51509F63693F011D9 /* Tooltips.swift */; };
+		76E1EC78A0F2DEF14E07FC5E /* ZebraShopRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = 703AF6EDBDAA80544942870D /* ZebraShopRepository.swift */; };
+		78BF49C8782516BD9319BE1E /* ChildDashboardScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 204C4890B6F86C3CBF16AF6E /* ChildDashboardScreen.swift */; };
+		79301603B2E5985187A0EB95 /* ParentChildrenFirebaseRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = FD7044E50038CB0A9EAFC1E8 /* ParentChildrenFirebaseRepository.swift */; };
+		87C33FE272813E1BF39598F6 /* RiskAnalyzer.swift in Sources */ = {isa = PBXBuildFile; fileRef = B9FBF177D46B211859229FD4 /* RiskAnalyzer.swift */; };
+		8FF8CB32F5428EAD034F8904 /* RewardsTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3BDCB07303D6A0E54237F77 /* RewardsTab.swift */; };
+		929C34DC75D4F48CC757C244 /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = B781EB354A0AA692CDEF068C /* FirebaseFirestore */; };
+		941206F96C261F382C659181 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 4404CA1E82A5B028E9D30929 /* Assets.xcassets */; };
+		976D4E19A4D2BBF3FCDEA93E /* ChildDashboardFirebaseRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = D9DF0A7DC6102C527E41F093 /* ChildDashboardFirebaseRepository.swift */; };
+		97D3197B55A9485632608BF8 /* ScreenTimeFirebaseRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = E42EF4F23FAA2646A4F9FD92 /* ScreenTimeFirebaseRepository.swift */; };
+		9B5443A640D924B4CAA0692C /* Task.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9FE94AB7E6C4A117D376DE5D /* Task.swift */; };
+		9E38BCE238BE801C0C95F177 /* Cards.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0B66B408650F4049A63258AD /* Cards.swift */; };
+		A2D76191EC917AB34F73956C /* ParentScreenTimeControlViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5998827495A483F959F7D93A /* ParentScreenTimeControlViewModel.swift */; };
+		AD9CB82F9AE2B65D3F294DD2 /* SoundManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14343449689BCABE67A0040F /* SoundManager.swift */; };
+		B7CB6F9A5C38CCCF483F8FA4 /* TabComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1A96A062B0DC7507E9C09A2 /* TabComponents.swift */; };
+		BA26FD83D4947D8ACCFE975E /* GoogleSignIn in Frameworks */ = {isa = PBXBuildFile; productRef = 6E206732A7170C5CDDA6A4DB /* GoogleSignIn */; };
+		BB7E79911976E2935A610E85 /* Ads.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8CC4CCC39090071107836BB /* Ads.swift */; };
+		BE0C7E8E18241A38E25E76AF /* ParentDashboardScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF0FE45B50C4882A883C8C0A /* ParentDashboardScreen.swift */; };
+		C465C581D1B3CBE637097EAF /* ZebraShopSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 023290FB0772A538DFDE6B8C /* ZebraShopSheet.swift */; };
+		C8A05A515A25E3F103B008E1 /* ChildLoginScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = C910690601FA8B316AD3F6D3 /* ChildLoginScreen.swift */; };
+		D1383E2DA0337CEE70E066BA /* MissionZebraApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06DF4AF825BFC77E22331DC2 /* MissionZebraApp.swift */; };
+		D201E9563168CDCF7C94007D /* ThemePreferences.swift in Sources */ = {isa = PBXBuildFile; fileRef = E4A1ED48483B9FE1CD94CE92 /* ThemePreferences.swift */; };
+		D3701B371B7001FB71BFC49B /* Animations.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8295E7DCDAEBBA878920D474 /* Animations.swift */; };
+		D7348FAE99C5FDF25951BE48 /* ParentScreenTimeControlScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = A69CD075179152D569860D85 /* ParentScreenTimeControlScreen.swift */; };
+		D79E94859491D2B24651B250 /* AddTaskDialog.swift in Sources */ = {isa = PBXBuildFile; fileRef = B317C7ED6DBBAEEEB1AE3CA7 /* AddTaskDialog.swift */; };
+		DAC1C2734F1B0C28132EB9A2 /* RewardFirebaseRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = BFDA59735C000CB5BAF7977D /* RewardFirebaseRepository.swift */; };
+		DCA83065448CE79E0624BC57 /* ParentLoginScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7F917AB3DC8FAF038E2ADC4 /* ParentLoginScreen.swift */; };
+		E2DB7B6DD637D86448B1ABE3 /* ChildData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 85EE0AEA6D011A8ACA7E58F5 /* ChildData.swift */; };
+		E86D3B65D643FAB7CD4C026F /* README_SETUP.md in Resources */ = {isa = PBXBuildFile; fileRef = F968F55F7B30ED382F8CDEA4 /* README_SETUP.md */; };
+		ED9A4F81AD44396A8A81296D /* AppNavigation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C4AF819EFEB7ADC8C881753 /* AppNavigation.swift */; };
+		EFE0C1F4F698C5CB2426BC72 /* ChildLoginViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1C82710478DD99EED71D019D /* ChildLoginViewModel.swift */; };
+		F4B59AEB595F29C9F6BA898F /* InMemoryMissionZebraRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = AEA35CF3D7B7384436CC13E0 /* InMemoryMissionZebraRepository.swift */; };
+		F51F9ACCCF7CE38D18B7E33C /* ParentAuthViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 04C29A63EA78A21B38290000 /* ParentAuthViewModel.swift */; };
+		F9EE59B0534E60938D3FBE1E /* PrivacyPolicyScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4AA83CFA4723487306DC1B59 /* PrivacyPolicyScreen.swift */; };
+		FA2E3E0A96D5D7E695E1655D /* Charts.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F8A03F497258CD7C68331C7 /* Charts.swift */; };
+		FB672C57073F27FB8D79B985 /* AddRewardDialog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 951FEA69BD04FEB3B43B75C7 /* AddRewardDialog.swift */; };
+		FDD9D39A2BD0A5E0195BA8C4 /* Reward.swift in Sources */ = {isa = PBXBuildFile; fileRef = 544E04D9F5AB9E46D416FBF4 /* Reward.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		014EC972FA6F0BFB4A114D0C /* MissionZebraRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MissionZebraRepository.swift; sourceTree = "<group>"; };
+		01855993AC90ADC0361587D8 /* ParentPremiumDashboardScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ParentPremiumDashboardScreen.swift; sourceTree = "<group>"; };
+		023290FB0772A538DFDE6B8C /* ZebraShopSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ZebraShopSheet.swift; sourceTree = "<group>"; };
+		02E90198D4DBED46D817B619 /* ChildrenTab.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChildrenTab.swift; sourceTree = "<group>"; };
+		04C29A63EA78A21B38290000 /* ParentAuthViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ParentAuthViewModel.swift; sourceTree = "<group>"; };
+		06DA2AC5CC63CE8EA2E571DA /* SessionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionManager.swift; sourceTree = "<group>"; };
+		06DF4AF825BFC77E22331DC2 /* MissionZebraApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MissionZebraApp.swift; sourceTree = "<group>"; };
+		08AAA8EA53291A0A5123FCCB /* AuthRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthRepository.swift; sourceTree = "<group>"; };
+		0B66B408650F4049A63258AD /* Cards.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Cards.swift; sourceTree = "<group>"; };
+		14343449689BCABE67A0040F /* SoundManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SoundManager.swift; sourceTree = "<group>"; };
+		15D9C547BC2ED3C1F2844417 /* ThemeExtensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThemeExtensions.swift; sourceTree = "<group>"; };
+		1B926B2844174C2D30B41B2F /* DeviceModeScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceModeScreen.swift; sourceTree = "<group>"; };
+		1C82710478DD99EED71D019D /* ChildLoginViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChildLoginViewModel.swift; sourceTree = "<group>"; };
+		1C9B6769DED19CF3DDE20044 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
+		204C4890B6F86C3CBF16AF6E /* ChildDashboardScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChildDashboardScreen.swift; sourceTree = "<group>"; };
+		3A052E0D380CAABFE34F3734 /* Badges.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Badges.swift; sourceTree = "<group>"; };
+		3BA5AB0DEBC1CD2D5CA2390F /* PinSecurity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PinSecurity.swift; sourceTree = "<group>"; };
+		3E182D346585A8E925C154D1 /* Backgrounds.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Backgrounds.swift; sourceTree = "<group>"; };
+		3F78F0DDD992D84D312B6F21 /* ChildDashboardViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChildDashboardViewModel.swift; sourceTree = "<group>"; };
+		42A1C095C0A38C424E74A127 /* SecurityTab.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SecurityTab.swift; sourceTree = "<group>"; };
+		4404CA1E82A5B028E9D30929 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		46AC263E3E9D93D7C2A87768 /* RiskSignal.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RiskSignal.swift; sourceTree = "<group>"; };
+		474B697C8A916FBD1EEDE0EF /* ChildScreenTimeTracker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChildScreenTimeTracker.swift; sourceTree = "<group>"; };
+		4822CC8DE3C536F57B311499 /* SplashScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplashScreen.swift; sourceTree = "<group>"; };
+		4AA83CFA4723487306DC1B59 /* PrivacyPolicyScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrivacyPolicyScreen.swift; sourceTree = "<group>"; };
+		544E04D9F5AB9E46D416FBF4 /* Reward.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Reward.swift; sourceTree = "<group>"; };
+		5998827495A483F959F7D93A /* ParentScreenTimeControlViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ParentScreenTimeControlViewModel.swift; sourceTree = "<group>"; };
+		5C4AF819EFEB7ADC8C881753 /* AppNavigation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppNavigation.swift; sourceTree = "<group>"; };
+		5E4547FD1B58F6B561B202FB /* Typography.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Typography.swift; sourceTree = "<group>"; };
+		6540E8B352E1EE80944522B6 /* Accessory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Accessory.swift; sourceTree = "<group>"; };
+		6E5AC091DC9B410FC049B10E /* Child.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Child.swift; sourceTree = "<group>"; };
+		6F9EBDD45A244BDB32C1124B /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		703AF6EDBDAA80544942870D /* ZebraShopRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ZebraShopRepository.swift; sourceTree = "<group>"; };
+		711EF956267E1A2FB115D78A /* TasksTab.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TasksTab.swift; sourceTree = "<group>"; };
+		8295E7DCDAEBBA878920D474 /* Animations.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Animations.swift; sourceTree = "<group>"; };
+		85EE0AEA6D011A8ACA7E58F5 /* ChildData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChildData.swift; sourceTree = "<group>"; };
+		89DAD3C693E60B37105367BE /* WelcomeScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WelcomeScreen.swift; sourceTree = "<group>"; };
+		8BA9D54072604DAAB965CE95 /* ParentDashboardViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ParentDashboardViewModel.swift; sourceTree = "<group>"; };
+		92D9B7FDCD9BDF192063E205 /* DeviceUsageRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceUsageRepository.swift; sourceTree = "<group>"; };
+		951FEA69BD04FEB3B43B75C7 /* AddRewardDialog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddRewardDialog.swift; sourceTree = "<group>"; };
+		96BF43E9980DFFC31A16FFF2 /* TaskFirebaseRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaskFirebaseRepository.swift; sourceTree = "<group>"; };
+		9A70679F37AB260C88FF3BCB /* TaskCalendarScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaskCalendarScreen.swift; sourceTree = "<group>"; };
+		9E836588392B2258828004B3 /* ParentPinManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ParentPinManager.swift; sourceTree = "<group>"; };
+		9F8A03F497258CD7C68331C7 /* Charts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Charts.swift; sourceTree = "<group>"; };
+		9FE94AB7E6C4A117D376DE5D /* Task.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Task.swift; sourceTree = "<group>"; };
+		A69CD075179152D569860D85 /* ParentScreenTimeControlScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ParentScreenTimeControlScreen.swift; sourceTree = "<group>"; };
+		A8CC4CCC39090071107836BB /* Ads.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Ads.swift; sourceTree = "<group>"; };
+		A9D8530F962FA6A2C3A66277 /* ParentOnlineSafetyScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ParentOnlineSafetyScreen.swift; sourceTree = "<group>"; };
+		AEA35CF3D7B7384436CC13E0 /* InMemoryMissionZebraRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InMemoryMissionZebraRepository.swift; sourceTree = "<group>"; };
+		B317C7ED6DBBAEEEB1AE3CA7 /* AddTaskDialog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddTaskDialog.swift; sourceTree = "<group>"; };
+		B3BDCB07303D6A0E54237F77 /* RewardsTab.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RewardsTab.swift; sourceTree = "<group>"; };
+		B8BC9003AB93D68B9FA6AB96 /* MissionZebra.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = MissionZebra.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		B9FBF177D46B211859229FD4 /* RiskAnalyzer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RiskAnalyzer.swift; sourceTree = "<group>"; };
+		BFDA59735C000CB5BAF7977D /* RewardFirebaseRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RewardFirebaseRepository.swift; sourceTree = "<group>"; };
+		C046E909C0D3604F57AF89AA /* Colors.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Colors.swift; sourceTree = "<group>"; };
+		C910690601FA8B316AD3F6D3 /* ChildLoginScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChildLoginScreen.swift; sourceTree = "<group>"; };
+		CF0FE45B50C4882A883C8C0A /* ParentDashboardScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ParentDashboardScreen.swift; sourceTree = "<group>"; };
+		D1ED32F51509F63693F011D9 /* Tooltips.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tooltips.swift; sourceTree = "<group>"; };
+		D9DF0A7DC6102C527E41F093 /* ChildDashboardFirebaseRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChildDashboardFirebaseRepository.swift; sourceTree = "<group>"; };
+		E13BAB7BFACC350FA9B5607F /* SafetyRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SafetyRepository.swift; sourceTree = "<group>"; };
+		E1A96A062B0DC7507E9C09A2 /* TabComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabComponents.swift; sourceTree = "<group>"; };
+		E42EF4F23FAA2646A4F9FD92 /* ScreenTimeFirebaseRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenTimeFirebaseRepository.swift; sourceTree = "<group>"; };
+		E4A1ED48483B9FE1CD94CE92 /* ThemePreferences.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThemePreferences.swift; sourceTree = "<group>"; };
+		E4FBE4943EA6A073E256199B /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
+		F7F917AB3DC8FAF038E2ADC4 /* ParentLoginScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ParentLoginScreen.swift; sourceTree = "<group>"; };
+		F968F55F7B30ED382F8CDEA4 /* README_SETUP.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README_SETUP.md; sourceTree = "<group>"; };
+		FD7044E50038CB0A9EAFC1E8 /* ParentChildrenFirebaseRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ParentChildrenFirebaseRepository.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		E58FFF586926AF74CB128259 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				3223A86DB7E4D16E9FC6A309 /* FirebaseAuth in Frameworks */,
+				929C34DC75D4F48CC757C244 /* FirebaseFirestore in Frameworks */,
+				4D7B70011F5C4D54AE9581F8 /* FirebaseMessaging in Frameworks */,
+				BA26FD83D4947D8ACCFE975E /* GoogleSignIn in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		0A4DF0A0FB042D67244BCA1C /* Session */ = {
+			isa = PBXGroup;
+			children = (
+				06DA2AC5CC63CE8EA2E571DA /* SessionManager.swift */,
+			);
+			path = Session;
+			sourceTree = "<group>";
+		};
+		15F5C17DA97488D0844E9230 /* Components */ = {
+			isa = PBXGroup;
+			children = (
+				951FEA69BD04FEB3B43B75C7 /* AddRewardDialog.swift */,
+				B317C7ED6DBBAEEEB1AE3CA7 /* AddTaskDialog.swift */,
+				3E182D346585A8E925C154D1 /* Backgrounds.swift */,
+				3A052E0D380CAABFE34F3734 /* Badges.swift */,
+				0B66B408650F4049A63258AD /* Cards.swift */,
+				9F8A03F497258CD7C68331C7 /* Charts.swift */,
+				D1ED32F51509F63693F011D9 /* Tooltips.swift */,
+			);
+			path = Components;
+			sourceTree = "<group>";
+		};
+		2371EB3534F88DB7AE0C53DD /* Splash */ = {
+			isa = PBXGroup;
+			children = (
+				4822CC8DE3C536F57B311499 /* SplashScreen.swift */,
+			);
+			path = Splash;
+			sourceTree = "<group>";
+		};
+		2EF0558700AFE58B87C1D9D4 /* UI */ = {
+			isa = PBXGroup;
+			children = (
+				CFAB1367D13F2912D7853C56 /* Animations */,
+				15F5C17DA97488D0844E9230 /* Components */,
+				B7332CDBF60B5708753B2BBD /* Theme */,
+			);
+			path = UI;
+			sourceTree = "<group>";
+		};
+		39FF14C2741613FBE6274965 /* Tabs */ = {
+			isa = PBXGroup;
+			children = (
+				02E90198D4DBED46D817B619 /* ChildrenTab.swift */,
+				B3BDCB07303D6A0E54237F77 /* RewardsTab.swift */,
+				42A1C095C0A38C424E74A127 /* SecurityTab.swift */,
+				711EF956267E1A2FB115D78A /* TasksTab.swift */,
+				F9B138B5A30494C65DB85FBE /* Components */,
+			);
+			path = Tabs;
+			sourceTree = "<group>";
+		};
+		3F41625A7C2210077B6F392F /* Core */ = {
+			isa = PBXGroup;
+			children = (
+				B58F41DD68A7EE6E26F12606 /* Device */,
+				C63426140346C187851B29E1 /* Models */,
+				4AC591A42310D4820F890AE4 /* Repositories */,
+				970D6867A7665AAB350AD3E3 /* Security */,
+				B97F9F6A7C4B0CC00377FF9B /* Services */,
+				0A4DF0A0FB042D67244BCA1C /* Session */,
+				BB1E8416DFF232C6F6141DDD /* Sound */,
+			);
+			path = Core;
+			sourceTree = "<group>";
+		};
+		47BF3A17122CA19BE86831C8 /* Safety */ = {
+			isa = PBXGroup;
+			children = (
+				B9FBF177D46B211859229FD4 /* RiskAnalyzer.swift */,
+				46AC263E3E9D93D7C2A87768 /* RiskSignal.swift */,
+				E13BAB7BFACC350FA9B5607F /* SafetyRepository.swift */,
+			);
+			path = Safety;
+			sourceTree = "<group>";
+		};
+		4AC591A42310D4820F890AE4 /* Repositories */ = {
+			isa = PBXGroup;
+			children = (
+				D9DF0A7DC6102C527E41F093 /* ChildDashboardFirebaseRepository.swift */,
+				AEA35CF3D7B7384436CC13E0 /* InMemoryMissionZebraRepository.swift */,
+				014EC972FA6F0BFB4A114D0C /* MissionZebraRepository.swift */,
+				FD7044E50038CB0A9EAFC1E8 /* ParentChildrenFirebaseRepository.swift */,
+				BFDA59735C000CB5BAF7977D /* RewardFirebaseRepository.swift */,
+				E42EF4F23FAA2646A4F9FD92 /* ScreenTimeFirebaseRepository.swift */,
+				96BF43E9980DFFC31A16FFF2 /* TaskFirebaseRepository.swift */,
+				703AF6EDBDAA80544942870D /* ZebraShopRepository.swift */,
+			);
+			path = Repositories;
+			sourceTree = "<group>";
+		};
+		56069F08B99735D865B2B543 /* Data */ = {
+			isa = PBXGroup;
+			children = (
+				85EE0AEA6D011A8ACA7E58F5 /* ChildData.swift */,
+			);
+			path = Data;
+			sourceTree = "<group>";
+		};
+		5A88FC293A5D4EB77370E178 /* Auth */ = {
+			isa = PBXGroup;
+			children = (
+				08AAA8EA53291A0A5123FCCB /* AuthRepository.swift */,
+			);
+			path = Auth;
+			sourceTree = "<group>";
+		};
+		637224008EDB098701CD70A3 /* Navigation */ = {
+			isa = PBXGroup;
+			children = (
+				5C4AF819EFEB7ADC8C881753 /* AppNavigation.swift */,
+			);
+			path = Navigation;
+			sourceTree = "<group>";
+		};
+		69441F8F6241356774C7C6F7 /* Welcome */ = {
+			isa = PBXGroup;
+			children = (
+				89DAD3C693E60B37105367BE /* WelcomeScreen.swift */,
+			);
+			path = Welcome;
+			sourceTree = "<group>";
+		};
+		6FD75059A0115FF021557950 /* Child */ = {
+			isa = PBXGroup;
+			children = (
+				204C4890B6F86C3CBF16AF6E /* ChildDashboardScreen.swift */,
+				3F78F0DDD992D84D312B6F21 /* ChildDashboardViewModel.swift */,
+				C910690601FA8B316AD3F6D3 /* ChildLoginScreen.swift */,
+				1C82710478DD99EED71D019D /* ChildLoginViewModel.swift */,
+				023290FB0772A538DFDE6B8C /* ZebraShopSheet.swift */,
+			);
+			path = Child;
+			sourceTree = "<group>";
+		};
+		970D6867A7665AAB350AD3E3 /* Security */ = {
+			isa = PBXGroup;
+			children = (
+				3BA5AB0DEBC1CD2D5CA2390F /* PinSecurity.swift */,
+				47BF3A17122CA19BE86831C8 /* Safety */,
+			);
+			path = Security;
+			sourceTree = "<group>";
+		};
+		A5C867E9E792BC56F7F6FCA1 /* Parent */ = {
+			isa = PBXGroup;
+			children = (
+				A8CC4CCC39090071107836BB /* Ads.swift */,
+				1B926B2844174C2D30B41B2F /* DeviceModeScreen.swift */,
+				04C29A63EA78A21B38290000 /* ParentAuthViewModel.swift */,
+				CF0FE45B50C4882A883C8C0A /* ParentDashboardScreen.swift */,
+				8BA9D54072604DAAB965CE95 /* ParentDashboardViewModel.swift */,
+				F7F917AB3DC8FAF038E2ADC4 /* ParentLoginScreen.swift */,
+				A9D8530F962FA6A2C3A66277 /* ParentOnlineSafetyScreen.swift */,
+				01855993AC90ADC0361587D8 /* ParentPremiumDashboardScreen.swift */,
+				A69CD075179152D569860D85 /* ParentScreenTimeControlScreen.swift */,
+				5998827495A483F959F7D93A /* ParentScreenTimeControlViewModel.swift */,
+				4AA83CFA4723487306DC1B59 /* PrivacyPolicyScreen.swift */,
+				9A70679F37AB260C88FF3BCB /* TaskCalendarScreen.swift */,
+				39FF14C2741613FBE6274965 /* Tabs */,
+			);
+			path = Parent;
+			sourceTree = "<group>";
+		};
+		B58F41DD68A7EE6E26F12606 /* Device */ = {
+			isa = PBXGroup;
+			children = (
+				474B697C8A916FBD1EEDE0EF /* ChildScreenTimeTracker.swift */,
+				92D9B7FDCD9BDF192063E205 /* DeviceUsageRepository.swift */,
+				9E836588392B2258828004B3 /* ParentPinManager.swift */,
+				F968F55F7B30ED382F8CDEA4 /* README_SETUP.md */,
+			);
+			path = Device;
+			sourceTree = "<group>";
+		};
+		B7332CDBF60B5708753B2BBD /* Theme */ = {
+			isa = PBXGroup;
+			children = (
+				C046E909C0D3604F57AF89AA /* Colors.swift */,
+				1C9B6769DED19CF3DDE20044 /* Theme.swift */,
+				15D9C547BC2ED3C1F2844417 /* ThemeExtensions.swift */,
+				E4A1ED48483B9FE1CD94CE92 /* ThemePreferences.swift */,
+				5E4547FD1B58F6B561B202FB /* Typography.swift */,
+			);
+			path = Theme;
+			sourceTree = "<group>";
+		};
+		B97F9F6A7C4B0CC00377FF9B /* Services */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
+		BB1E8416DFF232C6F6141DDD /* Sound */ = {
+			isa = PBXGroup;
+			children = (
+				14343449689BCABE67A0040F /* SoundManager.swift */,
+			);
+			path = Sound;
+			sourceTree = "<group>";
+		};
+		C63426140346C187851B29E1 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				6540E8B352E1EE80944522B6 /* Accessory.swift */,
+				6E5AC091DC9B410FC049B10E /* Child.swift */,
+				544E04D9F5AB9E46D416FBF4 /* Reward.swift */,
+				9FE94AB7E6C4A117D376DE5D /* Task.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		CFAB1367D13F2912D7853C56 /* Animations */ = {
+			isa = PBXGroup;
+			children = (
+				8295E7DCDAEBBA878920D474 /* Animations.swift */,
+			);
+			path = Animations;
+			sourceTree = "<group>";
+		};
+		D7A2A59C5E0789B4D0253AE0 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				B8BC9003AB93D68B9FA6AB96 /* MissionZebra.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		E6F4178C5EDCEDF6982CCF4B /* MissionZebra */ = {
+			isa = PBXGroup;
+			children = (
+				4404CA1E82A5B028E9D30929 /* Assets.xcassets */,
+				E4FBE4943EA6A073E256199B /* GoogleService-Info.plist */,
+				6F9EBDD45A244BDB32C1124B /* Info.plist */,
+				06DF4AF825BFC77E22331DC2 /* MissionZebraApp.swift */,
+				5A88FC293A5D4EB77370E178 /* Auth */,
+				3F41625A7C2210077B6F392F /* Core */,
+				56069F08B99735D865B2B543 /* Data */,
+				637224008EDB098701CD70A3 /* Navigation */,
+				F2677B5834DCD95EDBBA7E0F /* Screens */,
+				2EF0558700AFE58B87C1D9D4 /* UI */,
+			);
+			path = MissionZebra;
+			sourceTree = "<group>";
+		};
+		E896FB4C57D1278ADC918499 = {
+			isa = PBXGroup;
+			children = (
+				E6F4178C5EDCEDF6982CCF4B /* MissionZebra */,
+				D7A2A59C5E0789B4D0253AE0 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		F2677B5834DCD95EDBBA7E0F /* Screens */ = {
+			isa = PBXGroup;
+			children = (
+				6FD75059A0115FF021557950 /* Child */,
+				A5C867E9E792BC56F7F6FCA1 /* Parent */,
+				2371EB3534F88DB7AE0C53DD /* Splash */,
+				69441F8F6241356774C7C6F7 /* Welcome */,
+			);
+			path = Screens;
+			sourceTree = "<group>";
+		};
+		F9B138B5A30494C65DB85FBE /* Components */ = {
+			isa = PBXGroup;
+			children = (
+				E1A96A062B0DC7507E9C09A2 /* TabComponents.swift */,
+			);
+			path = Components;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		8AE5CD6232BC71A29BA6FE73 /* MissionZebra */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 5A65D26FA578A95B961CCCDB /* Build configuration list for PBXNativeTarget "MissionZebra" */;
+			buildPhases = (
+				C4A688051CF79E73CFECA552 /* Sources */,
+				5A1860427CB51033A4324EC8 /* Resources */,
+				E58FFF586926AF74CB128259 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = MissionZebra;
+			packageProductDependencies = (
+				3EC4931B4754F131671A446D /* FirebaseAuth */,
+				B781EB354A0AA692CDEF068C /* FirebaseFirestore */,
+				3F2EFC55A85E401E29620D53 /* FirebaseMessaging */,
+				6E206732A7170C5CDDA6A4DB /* GoogleSignIn */,
+			);
+			productName = MissionZebra;
+			productReference = B8BC9003AB93D68B9FA6AB96 /* MissionZebra.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		FA609A694862060552BF9F3E /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1500;
+				TargetAttributes = {
+					8AE5CD6232BC71A29BA6FE73 = {
+						DevelopmentTeam = "";
+						ProvisioningStyle = Automatic;
+					};
+				};
+			};
+			buildConfigurationList = 2485930623FC2A497C4E28DB /* Build configuration list for PBXProject "MissionZebra" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = E896FB4C57D1278ADC918499;
+			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				F678D8B08BC621213E0867DB /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
+				0CC29BA8225C214CC3719864 /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */,
+			);
+			preferredProjectObjectVersion = 77;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				8AE5CD6232BC71A29BA6FE73 /* MissionZebra */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		5A1860427CB51033A4324EC8 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				941206F96C261F382C659181 /* Assets.xcassets in Resources */,
+				6A299EC85FFDB0EF323A01BE /* GoogleService-Info.plist in Resources */,
+				E86D3B65D643FAB7CD4C026F /* README_SETUP.md in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		C4A688051CF79E73CFECA552 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				53A4D6D877940C34AED0ACEC /* Accessory.swift in Sources */,
+				FB672C57073F27FB8D79B985 /* AddRewardDialog.swift in Sources */,
+				D79E94859491D2B24651B250 /* AddTaskDialog.swift in Sources */,
+				BB7E79911976E2935A610E85 /* Ads.swift in Sources */,
+				D3701B371B7001FB71BFC49B /* Animations.swift in Sources */,
+				ED9A4F81AD44396A8A81296D /* AppNavigation.swift in Sources */,
+				1C1BD74C435ED777F2AFF1B9 /* AuthRepository.swift in Sources */,
+				50C11D009CBDECD313B00B4C /* Backgrounds.swift in Sources */,
+				52710521D717B4523061A728 /* Badges.swift in Sources */,
+				9E38BCE238BE801C0C95F177 /* Cards.swift in Sources */,
+				FA2E3E0A96D5D7E695E1655D /* Charts.swift in Sources */,
+				4E02E759360A4234AB8878F3 /* Child.swift in Sources */,
+				976D4E19A4D2BBF3FCDEA93E /* ChildDashboardFirebaseRepository.swift in Sources */,
+				78BF49C8782516BD9319BE1E /* ChildDashboardScreen.swift in Sources */,
+				5F69E49A8A6E404D198C2521 /* ChildDashboardViewModel.swift in Sources */,
+				E2DB7B6DD637D86448B1ABE3 /* ChildData.swift in Sources */,
+				C8A05A515A25E3F103B008E1 /* ChildLoginScreen.swift in Sources */,
+				EFE0C1F4F698C5CB2426BC72 /* ChildLoginViewModel.swift in Sources */,
+				4C7F89610E4454593C8B4619 /* ChildScreenTimeTracker.swift in Sources */,
+				30971443809CF697B0445939 /* ChildrenTab.swift in Sources */,
+				675FB588BE2BFDFE1CB06354 /* Colors.swift in Sources */,
+				426626C6EEDB8F0B3325479C /* DeviceModeScreen.swift in Sources */,
+				35109E18FC5BDAB69E47905F /* DeviceUsageRepository.swift in Sources */,
+				F4B59AEB595F29C9F6BA898F /* InMemoryMissionZebraRepository.swift in Sources */,
+				D1383E2DA0337CEE70E066BA /* MissionZebraApp.swift in Sources */,
+				003245B60967DD2D628DD866 /* MissionZebraRepository.swift in Sources */,
+				F51F9ACCCF7CE38D18B7E33C /* ParentAuthViewModel.swift in Sources */,
+				79301603B2E5985187A0EB95 /* ParentChildrenFirebaseRepository.swift in Sources */,
+				BE0C7E8E18241A38E25E76AF /* ParentDashboardScreen.swift in Sources */,
+				32A75D6AA21F9EF0FA8A2BF6 /* ParentDashboardViewModel.swift in Sources */,
+				DCA83065448CE79E0624BC57 /* ParentLoginScreen.swift in Sources */,
+				323A1FC1AB2A584338978DE6 /* ParentOnlineSafetyScreen.swift in Sources */,
+				516190CC7773A8B2E15B4969 /* ParentPinManager.swift in Sources */,
+				6EC2A60DC13A5611FF06B6FC /* ParentPremiumDashboardScreen.swift in Sources */,
+				D7348FAE99C5FDF25951BE48 /* ParentScreenTimeControlScreen.swift in Sources */,
+				A2D76191EC917AB34F73956C /* ParentScreenTimeControlViewModel.swift in Sources */,
+				278BFA13746A5D5F024327CA /* PinSecurity.swift in Sources */,
+				F9EE59B0534E60938D3FBE1E /* PrivacyPolicyScreen.swift in Sources */,
+				FDD9D39A2BD0A5E0195BA8C4 /* Reward.swift in Sources */,
+				DAC1C2734F1B0C28132EB9A2 /* RewardFirebaseRepository.swift in Sources */,
+				8FF8CB32F5428EAD034F8904 /* RewardsTab.swift in Sources */,
+				87C33FE272813E1BF39598F6 /* RiskAnalyzer.swift in Sources */,
+				56BBCF43701970CEF8047C2E /* RiskSignal.swift in Sources */,
+				5A5E239406494166DBBD83D5 /* SafetyRepository.swift in Sources */,
+				97D3197B55A9485632608BF8 /* ScreenTimeFirebaseRepository.swift in Sources */,
+				324A0D0423601F13127045FF /* SecurityTab.swift in Sources */,
+				6974467F1E260E9EC0773ED7 /* SessionManager.swift in Sources */,
+				AD9CB82F9AE2B65D3F294DD2 /* SoundManager.swift in Sources */,
+				21B39A24B585156E60E5B58F /* SplashScreen.swift in Sources */,
+				B7CB6F9A5C38CCCF483F8FA4 /* TabComponents.swift in Sources */,
+				9B5443A640D924B4CAA0692C /* Task.swift in Sources */,
+				3F59FDDAA4B2D27200AD89C3 /* TaskCalendarScreen.swift in Sources */,
+				4C69CA64E7A84DE5B10A5462 /* TaskFirebaseRepository.swift in Sources */,
+				2644472BB93472AA934AFD46 /* TasksTab.swift in Sources */,
+				7164E3D82EFA7F4448B252CE /* Theme.swift in Sources */,
+				0C98D674EFB9D458AEA5F354 /* ThemeExtensions.swift in Sources */,
+				D201E9563168CDCF7C94007D /* ThemePreferences.swift in Sources */,
+				72AF5B98B3AB9F48F04EC745 /* Tooltips.swift in Sources */,
+				063881F3F275BCA9ECB60434 /* Typography.swift in Sources */,
+				10DA09A269923F848426644C /* WelcomeScreen.swift in Sources */,
+				76E1EC78A0F2DEF14E07FC5E /* ZebraShopRepository.swift in Sources */,
+				C465C581D1B3CBE637097EAF /* ZebraShopSheet.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		12D19335AF756C8CA230C8CB /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		A9D381E7C3B824030F6C18C0 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		E25EC5FCCC2CB97148F0D931 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				INFOPLIST_FILE = MissionZebra/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = be.missionzebra.app;
+				SDKROOT = iphoneos;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SWIFT_VERSION = 5.9;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		F9ED6E9B242AA710D29A89DF /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				INFOPLIST_FILE = MissionZebra/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = be.missionzebra.app;
+				SDKROOT = iphoneos;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SWIFT_VERSION = 5.9;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		2485930623FC2A497C4E28DB /* Build configuration list for PBXProject "MissionZebra" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A9D381E7C3B824030F6C18C0 /* Debug */,
+				12D19335AF756C8CA230C8CB /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		5A65D26FA578A95B961CCCDB /* Build configuration list for PBXNativeTarget "MissionZebra" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				E25EC5FCCC2CB97148F0D931 /* Debug */,
+				F9ED6E9B242AA710D29A89DF /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		0CC29BA8225C214CC3719864 /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/google/GoogleSignIn-iOS";
+			requirement = {
+				kind = exactVersion;
+				version = 7.0.0;
+			};
+		};
+		F678D8B08BC621213E0867DB /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/firebase/firebase-ios-sdk";
+			requirement = {
+				kind = exactVersion;
+				version = 11.0.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		3EC4931B4754F131671A446D /* FirebaseAuth */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = F678D8B08BC621213E0867DB /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseAuth;
+		};
+		3F2EFC55A85E401E29620D53 /* FirebaseMessaging */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = F678D8B08BC621213E0867DB /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseMessaging;
+		};
+		6E206732A7170C5CDDA6A4DB /* GoogleSignIn */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 0CC29BA8225C214CC3719864 /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */;
+			productName = GoogleSignIn;
+		};
+		B781EB354A0AA692CDEF068C /* FirebaseFirestore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = F678D8B08BC621213E0867DB /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseFirestore;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = FA609A694862060552BF9F3E /* Project object */;
+}

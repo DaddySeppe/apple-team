@@ -1,0 +1,809 @@
+import SwiftUI
+import Combine
+
+// MARK: - MissionZebraCard
+
+struct MissionZebraCard<Content: View>: View {
+    let content: Content
+
+    init(@ViewBuilder content: () -> Content) {
+        self.content = content()
+    }
+
+    var body: some View {
+        content
+            .background(
+                RoundedRectangle(cornerRadius: 28)
+                    .fill(Color(.secondarySystemBackground))
+                    .shadow(radius: 6)
+            )
+            .clipShape(RoundedRectangle(cornerRadius: 28))
+    }
+}
+
+// MARK: - Child Dashboard Screen
+
+struct ChildDashboardScreen: View {
+    @EnvironmentObject var router: NavigationRouter
+    let childId: String
+    let childName: String
+
+    @StateObject private var viewModel: ChildDashboardViewModel
+
+    @State private var showExitPinDialog = false
+    @State private var exitPinInput = ""
+    @State private var exitPinError: String?
+    @State private var showConfetti = false
+
+    init(childId: String, childName: String) {
+        self.childId = childId
+        self.childName = childName
+        _viewModel = StateObject(wrappedValue: ChildDashboardViewModel(childId: childId, childName: childName))
+    }
+
+    var body: some View {
+        let state = viewModel.uiState
+
+        ZStack {
+            ZebraBackgroundView(rotationDegrees: -20) {
+                ZStack {
+                    mainContent(state: state)
+
+                    if showConfetti {
+                        ConfettiRainView(
+                            confettiCount: 140,
+                            waveDurationSeconds: 2.5,
+                            waves: 3,
+                            onFinished: { showConfetti = false }
+                        )
+                    }
+
+                    if state.isFocusModeActive {
+                        FocusModeOverlay(
+                            onStopClick: { viewModel.stopFocusMode() },
+                            equippedAccessoryEmoji: viewModel.availableAccessories.first(where: { $0.id == state.child?.equippedAccessoryId })?.emoji
+                        )
+                    }
+                }
+            }
+        }
+        .sheet(isPresented: Binding(
+            get: { viewModel.uiState.isShopOpen },
+            set: { viewModel.toggleShop(isOpen: $0) }
+        )) {
+            shopSheet(state: state)
+        }
+        .alert("Goed gedaan!", isPresented: Binding(
+            get: { viewModel.uiState.focusSessionEarnedPoints != nil },
+            set: { if !$0 { viewModel.clearFocusSessionResult() } }
+        )) {
+            Button("Geweldig! 🎉") { viewModel.clearFocusSessionResult() }
+        } message: {
+            if let earned = viewModel.uiState.focusSessionEarnedPoints {
+                Text("Je hebt \(earned) punten verdiend door je telefoon met rust te laten! Ga zo door. 🦓")
+            }
+        }
+        .alert("Schermtijd wordt gemeten", isPresented: Binding(
+            get: { viewModel.uiState.showScreenTimeDialog },
+            set: { if !$0 { viewModel.dismissScreenTimeDialog() } }
+        )) {
+            Button("Ok") { viewModel.dismissScreenTimeDialog() }
+        } message: {
+            Text("MissionZebra houdt nu bij hoe lang je deze app gebruikt en slaat dat op voor je ouders.")
+        }
+        .alert("Ouder-PIN", isPresented: $showExitPinDialog) {
+            exitPinAlertContent
+        } message: {
+            exitPinAlertMessage
+        }
+        .onAppear {
+            SessionManager.shared.setChildLoggedIn(childId: childId, childName: childName)
+        }
+    }
+
+    // MARK: - Extracted Sub-views
+
+    @ViewBuilder
+    private func mainContent(state: ChildDashboardUiState) -> some View {
+        let points = state.child?.points ?? 0
+        let usedMinutes = state.child?.dailyScreenTimeUsedMinutes ?? 0
+        let limitMinutes = state.child?.dailyScreenTimeLimitMinutes ?? 60
+
+        VStack(spacing: 0) {
+            ScrollView {
+                VStack(spacing: 0) {
+                    ChildHeader(
+                        name: state.child?.name ?? childName,
+                        points: points,
+                        streak: state.child?.streak ?? 0,
+                        equippedAccessoryEmoji: viewModel.availableAccessories.first(where: { $0.id == state.child?.equippedAccessoryId })?.emoji,
+                        onParentAccessClick: { showExitPinDialog = true },
+                        onZebraClick: { viewModel.toggleShop(isOpen: true) }
+                    )
+
+                    if let msg = state.child?.motivationalMessage, !msg.isEmpty {
+                        ParentMessageCard(message: msg, onDismiss: { viewModel.dismissMessage() })
+                            .padding(.top, 16)
+                    }
+
+                    ScreenTimeCard(usedMinutes: usedMinutes, limitMinutes: limitMinutes)
+                        .padding(.top, 16)
+
+                    if state.child?.isBlocked == true {
+                        BlockedMessage()
+                            .padding(.top, 16)
+                    } else {
+                        taskRewardSection(state: state, points: points)
+                    }
+
+                    if let error = state.error {
+                        Text(error)
+                            .foregroundColor(.red)
+                            .multilineTextAlignment(.center)
+                            .frame(maxWidth: .infinity)
+                            .padding(.top, 8)
+                    }
+                }
+                .padding(.horizontal, 20)
+                .padding(.vertical, 24)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func taskRewardSection(state: ChildDashboardUiState, points: Int) -> some View {
+        PlayfulTaskRewardSection(
+            isLoading: state.isLoading,
+            tasks: state.tasks,
+            rewards: state.rewards,
+            points: points,
+            onTaskDone: { taskId in
+                viewModel.markTaskDone(taskId: taskId)
+                showConfetti = true
+            },
+            onRewardRedeem: { viewModel.redeemReward(rewardId: $0) }
+        )
+        .padding(.top, 16)
+
+        Button(action: { viewModel.startFocusMode() }) {
+            Text("💤 Laat de Zebra rusten")
+                .font(.title3)
+                .fontWeight(.bold)
+                .frame(maxWidth: .infinity)
+                .frame(height: 60)
+        }
+        .buttonStyle(.borderedProminent)
+        .tint(Color(red: 0.39, green: 0.40, blue: 0.95))
+        .cornerRadius(16)
+        .padding(.top, 16)
+    }
+
+    @ViewBuilder
+    private func shopSheet(state: ChildDashboardUiState) -> some View {
+        ZebraShopSheet(
+            points: state.child?.points ?? 0,
+            availableAccessories: viewModel.availableAccessories,
+            purchasedIds: state.child?.purchasedAccessoryIds ?? [],
+            equippedId: state.child?.equippedAccessoryId,
+            onBuy: { viewModel.buyAccessory(accessory: $0) },
+            onEquip: { viewModel.equipAccessory(accessoryId: $0) },
+            onDismiss: { viewModel.toggleShop(isOpen: false) }
+        )
+    }
+
+    @ViewBuilder
+    private var exitPinAlertContent: some View {
+        TextField("4-cijferige PIN", text: $exitPinInput)
+            .keyboardType(.numberPad)
+        Button("Verder") {
+            if ParentPinManager.shared.checkPin(exitPinInput) {
+                SessionManager.shared.setParentLoggedIn()
+                showExitPinDialog = false
+                exitPinInput = ""
+                exitPinError = nil
+                viewModel.endSession()
+                router.navigate(to: .parentDashboard)
+            } else {
+                exitPinError = "Foute code"
+            }
+        }
+        Button("Annuleren", role: .cancel) {
+            showExitPinDialog = false
+            exitPinInput = ""
+            exitPinError = nil
+        }
+    }
+
+    @ViewBuilder
+    private var exitPinAlertMessage: some View {
+        if let error = exitPinError {
+            Text(error)
+        } else {
+            Text("Voer je 4-cijferige PIN in om af te sluiten")
+        }
+    }
+}
+
+// MARK: - Child Header
+
+private struct ChildHeader: View {
+    let name: String
+    let points: Int
+    let streak: Int
+    let equippedAccessoryEmoji: String?
+    let onParentAccessClick: () -> Void
+    let onZebraClick: () -> Void
+
+    var body: some View {
+        VStack(spacing: 12) {
+            HStack(alignment: .top) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Hoi \(name)! 🦓")
+                        .font(.title)
+                        .fontWeight(.heavy)
+
+                    Text("Welkom terug bij je MissionZebra-wereld!")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                }
+
+                Spacer()
+
+                HStack(spacing: 8) {
+                    Button(action: onZebraClick) {
+                        Image(systemName: "bag.fill")
+                            .frame(width: 40, height: 40)
+                            .background(Circle().fill(Color(.systemBackground)).overlay(Circle().stroke(Color.secondary.opacity(0.3), lineWidth: 1)))
+                    }
+                    .buttonStyle(.plain)
+
+                    Button(action: onParentAccessClick) {
+                        Image(systemName: "lock.fill")
+                            .frame(width: 40, height: 40)
+                            .background(Circle().fill(Color(.systemBackground)).overlay(Circle().stroke(Color.secondary.opacity(0.3), lineWidth: 1)))
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+
+            HStack(spacing: 12) {
+                // Zebra badge
+                ZStack {
+                    Circle()
+                        .fill(Color.primary)
+                        .frame(width: 52, height: 52)
+
+                    Text("🦓")
+                        .font(.system(size: 30))
+
+                    if let emoji = equippedAccessoryEmoji {
+                        Text(emoji)
+                            .font(.system(size: 18))
+                            .offset(y: -12)
+                    }
+                }
+                .onTapGesture { onZebraClick() }
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Jouw sterren")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+
+                    Text("\(points) punten")
+                        .font(.title3)
+                        .fontWeight(.bold)
+
+                    Text("Level \((points / 50) + 1)")
+                        .font(.caption)
+                        .fontWeight(.bold)
+                        .foregroundColor(Color(red: 0.39, green: 0.40, blue: 0.95))
+                }
+
+                Spacer()
+
+                if streak > 0 {
+                    HStack(spacing: 4) {
+                        Text("🔥")
+                            .font(.system(size: 20))
+                        Text("\(streak)")
+                            .font(.title3)
+                            .fontWeight(.black)
+                            .foregroundColor(Color(red: 0.90, green: 0.32, blue: 0.0))
+                    }
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 8)
+                    .background(
+                        LinearGradient(
+                            colors: [Color(red: 1.0, green: 0.93, blue: 0.63), Color(red: 1.0, green: 0.84, blue: 0.31)],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                    )
+                    .cornerRadius(12)
+                }
+            }
+        }
+    }
+}
+
+// MARK: - Screen Time Card
+
+private struct ScreenTimeCard: View {
+    let usedMinutes: Int
+    let limitMinutes: Int
+
+    private var progress: Float {
+        Float(usedMinutes) / Float(max(limitMinutes, 1))
+    }
+
+    private var color: Color {
+        progress >= 1.0 ? Color(red: 0.94, green: 0.27, blue: 0.27) : Color(red: 0.06, green: 0.73, blue: 0.51)
+    }
+
+    var body: some View {
+        MissionZebraCard {
+            HStack {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Schermtijd vandaag")
+                        .font(.subheadline)
+                        .fontWeight(.medium)
+                        .foregroundColor(.secondary)
+
+                    HStack(alignment: .bottom, spacing: 4) {
+                        Text("\(usedMinutes)")
+                            .font(.title)
+                            .fontWeight(.bold)
+
+                        Text("/ \(limitMinutes) min")
+                            .font(.title3)
+                            .foregroundColor(.secondary)
+                            .padding(.bottom, 2)
+                    }
+                }
+
+                Spacer()
+
+                ZStack {
+                    Circle()
+                        .stroke(Color.secondary.opacity(0.2), lineWidth: 6)
+                        .frame(width: 60, height: 60)
+
+                    Circle()
+                        .trim(from: 0, to: CGFloat(min(progress, 1.0)))
+                        .stroke(color, style: StrokeStyle(lineWidth: 6, lineCap: .round))
+                        .frame(width: 60, height: 60)
+                        .rotationEffect(.degrees(-90))
+
+                    Text("\(max(limitMinutes - usedMinutes, 0))")
+                        .font(.callout)
+                        .fontWeight(.bold)
+                }
+            }
+            .padding(16)
+        }
+    }
+}
+
+// MARK: - Blocked Message
+
+private struct BlockedMessage: View {
+    var body: some View {
+        VStack(spacing: 8) {
+            Text("⛔ Tijd om pauze te nemen")
+                .font(.title3)
+                .fontWeight(.bold)
+                .multilineTextAlignment(.center)
+
+            Text("Je telefoon is nu geblokkeerd. Vraag aan je ouder om hem weer vrij te geven.")
+                .font(.subheadline)
+                .multilineTextAlignment(.center)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.horizontal, 18)
+        .padding(.vertical, 16)
+        .background(RoundedRectangle(cornerRadius: 24).fill(Color.red.opacity(0.15)))
+    }
+}
+
+// MARK: - Playful Task Reward Section
+
+private struct PlayfulTaskRewardSection: View {
+    let isLoading: Bool
+    let tasks: [MZTask]
+    let rewards: [Reward]
+    let points: Int
+    let onTaskDone: (String) -> Void
+    let onRewardRedeem: (String) -> Void
+
+    @State private var showCompleted = false
+
+    private var activeTasks: [MZTask] { tasks.filter { !$0.completed } }
+    private var completedTasks: [MZTask] { tasks.filter { $0.completed } }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            // Tasks header
+            Text("🧹 Taken")
+                .font(.title3)
+                .fontWeight(.bold)
+
+            if isLoading {
+                Text("Laden...")
+                    .font(.subheadline)
+            } else if tasks.isEmpty {
+                Text("Er zijn momenteel geen taken.")
+                    .font(.subheadline)
+            } else {
+                ForEach(activeTasks) { task in
+                    ChildTaskCard(task: task, onDoneClick: { onTaskDone(task.id) })
+                }
+
+                if !completedTasks.isEmpty {
+                    Button(action: { showCompleted.toggle() }) {
+                        Text(showCompleted ? "Verberg voltooide taken" : "Toon \(completedTasks.count) voltooide taken ✅")
+                            .font(.subheadline)
+                            .fontWeight(.bold)
+                            .foregroundColor(.secondary)
+                    }
+                    .frame(maxWidth: .infinity)
+
+                    if showCompleted {
+                        ForEach(completedTasks) { task in
+                            ChildTaskCard(task: task, onDoneClick: { onTaskDone(task.id) })
+                        }
+                    }
+                }
+            }
+
+            // Rewards header
+            Text("🎁 Beloningen")
+                .font(.title3)
+                .fontWeight(.bold)
+                .padding(.top, 4)
+
+            if rewards.isEmpty {
+                Text("Nog geen beloningen beschikbaar.")
+                    .font(.subheadline)
+            } else {
+                ForEach(rewards) { reward in
+                    let canRedeem = !reward.redeemed && points >= reward.costPoints
+                    ChildRewardCard(
+                        reward: reward,
+                        canRedeem: canRedeem,
+                        onRedeemClick: { onRewardRedeem(reward.id) }
+                    )
+                }
+            }
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
+        .background(RoundedRectangle(cornerRadius: 28).fill(Color(.secondarySystemBackground)).shadow(radius: 6))
+    }
+}
+
+// MARK: - Child Task Card
+
+private struct ChildTaskCard: View {
+    let task: MZTask
+    let onDoneClick: () -> Void
+
+    private var isPending: Bool { task.pendingApproval && !task.completed }
+    private var canReportDone: Bool { !task.pendingApproval && !task.completed }
+    private var isCompleted: Bool { task.completed }
+
+    private var backgroundColor: Color {
+        if isCompleted { return Color.green.opacity(0.12) }
+        if isPending { return Color.yellow.opacity(0.12) }
+        return Color(.tertiarySystemBackground)
+    }
+
+    private var emoji: String {
+        if isCompleted { return "✅" }
+        if isPending { return "⏳" }
+        return "🧹"
+    }
+
+    private var statusText: String {
+        if isPending { return "Wachten op ouder" }
+        if isCompleted { return "Afgerond" }
+        return "Nog te doen"
+    }
+
+    var body: some View {
+        HStack(spacing: 12) {
+            ZStack {
+                Circle()
+                    .fill(Color(red: 0.05, green: 0.65, blue: 0.91))
+                    .frame(width: 40, height: 40)
+
+                Text(emoji)
+                    .font(.title2)
+            }
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(task.title)
+                    .font(.body)
+                    .fontWeight(.semibold)
+
+                Text("\(task.points) punten")
+                    .font(.subheadline)
+
+                Text(statusText)
+                    .font(.caption)
+            }
+
+            Spacer()
+
+            if canReportDone {
+                Button("Klaar", action: onDoneClick)
+                    .buttonStyle(.borderedProminent)
+            }
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 12)
+        .background(RoundedRectangle(cornerRadius: 20).fill(backgroundColor))
+    }
+}
+
+// MARK: - Child Reward Card
+
+private struct ChildRewardCard: View {
+    let reward: Reward
+    let canRedeem: Bool
+    let onRedeemClick: () -> Void
+
+    private var statusText: String {
+        if reward.redeemed { return "Al ingewisseld" }
+        if canRedeem { return "Je kan deze beloning nu inwisselen" }
+        return "Nog niet genoeg punten"
+    }
+
+    private var backgroundColor: Color {
+        if reward.redeemed { return Color.secondary.opacity(0.1) }
+        if canRedeem { return Color.green.opacity(0.12) }
+        return Color(.tertiarySystemBackground)
+    }
+
+    var body: some View {
+        HStack(spacing: 12) {
+            ZStack {
+                Circle()
+                    .fill(
+                        RadialGradient(
+                            colors: [Color(red: 0.98, green: 0.45, blue: 0.09), Color(red: 0.93, green: 0.29, blue: 0.60)],
+                            center: .center,
+                            startRadius: 0,
+                            endRadius: 20
+                        )
+                    )
+                    .frame(width: 40, height: 40)
+
+                Text("🎁")
+                    .font(.title2)
+            }
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(reward.title)
+                    .font(.body)
+                    .fontWeight(.semibold)
+
+                Text("\(reward.costPoints) punten")
+                    .font(.subheadline)
+
+                Text(statusText)
+                    .font(.caption)
+            }
+
+            Spacer()
+
+            if !reward.redeemed {
+                Button("Inwisselen", action: onRedeemClick)
+                    .buttonStyle(.borderedProminent)
+                    .disabled(!canRedeem)
+            }
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 12)
+        .background(RoundedRectangle(cornerRadius: 20).fill(backgroundColor))
+    }
+}
+
+// MARK: - Confetti Rain
+
+struct ConfettiRainView: View {
+    let confettiCount: Int
+    let waveDurationSeconds: Double
+    let waves: Int
+    let onFinished: () -> Void
+
+    @State private var progress: CGFloat = 0
+    @State private var specs: [ConfettiSpec] = []
+    @State private var currentWave = 0
+
+    private static let colors: [Color] = [
+        Color(red: 1.0, green: 0.79, blue: 0.29),
+        Color(red: 0.98, green: 0.44, blue: 0.52),
+        Color(red: 0.65, green: 0.71, blue: 0.99),
+        Color(red: 0.29, green: 0.87, blue: 0.50),
+        Color(red: 0.47, green: 0.85, blue: 0.98)
+    ]
+
+    var body: some View {
+        Canvas { context, size in
+            let minDim = min(size.width, size.height)
+            let p = progress
+
+            for spec in specs {
+                let baseX = spec.startXFraction * size.width
+                let waveOffset = sin(spec.phase + p * 6) * (size.width * 0.05)
+                let x = baseX + waveOffset
+                let y = -minDim + (size.height + 2 * minDim) * p * spec.speedMultiplier
+                let confettiSize = spec.sizeFraction * minDim
+
+                let rect = CGRect(
+                    x: x - confettiSize / 2,
+                    y: y - confettiSize / 2,
+                    width: confettiSize,
+                    height: confettiSize * 1.8
+                )
+                let path = Path(roundedRect: rect, cornerRadius: confettiSize / 3)
+                context.fill(path, with: .color(spec.color))
+            }
+        }
+        .allowsHitTesting(false)
+        .onAppear {
+            startNextWave()
+        }
+    }
+
+    private func startNextWave() {
+        specs = generateSpecs()
+        progress = 0
+
+        withAnimation(.linear(duration: waveDurationSeconds)) {
+            progress = 1.0
+        }
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + waveDurationSeconds) {
+            if currentWave + 1 < waves {
+                currentWave += 1
+                startNextWave()
+            } else {
+                onFinished()
+            }
+        }
+    }
+
+    private func generateSpecs() -> [ConfettiSpec] {
+        (0..<confettiCount).map { _ in
+            ConfettiSpec(
+                startXFraction: CGFloat.random(in: 0...1),
+                sizeFraction: CGFloat.random(in: 0.01...0.03),
+                speedMultiplier: CGFloat.random(in: 0.7...1.3),
+                phase: CGFloat.random(in: 0...(2 * .pi)),
+                color: Self.colors.randomElement()!
+            )
+        }
+    }
+}
+
+private struct ConfettiSpec {
+    let startXFraction: CGFloat
+    let sizeFraction: CGFloat
+    let speedMultiplier: CGFloat
+    let phase: CGFloat
+    let color: Color
+}
+
+// MARK: - Focus Mode Overlay
+
+struct FocusModeOverlay: View {
+    let onStopClick: () -> Void
+    let equippedAccessoryEmoji: String?
+
+    @State private var elapsedSeconds: Int = 0
+    @State private var zzzAlpha: Double = 0.4
+
+    let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
+
+    var body: some View {
+        ZStack {
+            Color(red: 0.12, green: 0.16, blue: 0.22)
+                .ignoresSafeArea()
+
+            VStack(spacing: 0) {
+                Text("Zzz...")
+                    .font(.system(size: 48, weight: .bold))
+                    .foregroundColor(.white.opacity(zzzAlpha))
+                    .onAppear {
+                        withAnimation(.linear(duration: 1.5).repeatForever(autoreverses: true)) {
+                            zzzAlpha = 1.0
+                        }
+                    }
+
+                Spacer().frame(height: 32)
+
+                ZStack {
+                    Text("🦓")
+                        .font(.system(size: 120))
+
+                    if let emoji = equippedAccessoryEmoji {
+                        Text(emoji)
+                            .font(.system(size: 60))
+                            .offset(y: -50)
+                    }
+                }
+
+                Spacer().frame(height: 32)
+
+                Text("Sst... de zebra slaapt.")
+                    .font(.title2)
+                    .fontWeight(.medium)
+                    .foregroundColor(.white)
+
+                Spacer().frame(height: 8)
+
+                Text(String(format: "%02d:%02d", elapsedSeconds / 60, elapsedSeconds % 60))
+                    .font(.system(size: 36, weight: .bold, design: .monospaced))
+                    .foregroundColor(Color(red: 0.51, green: 0.55, blue: 0.97))
+
+                Spacer().frame(height: 16)
+
+                Text("Leg de telefoon weg (scherm uit)\nom punten te verdienen! ✨")
+                    .multilineTextAlignment(.center)
+                    .foregroundColor(.gray)
+
+                Spacer().frame(height: 48)
+
+                Button(action: onStopClick) {
+                    Text("Wakker maken (Stoppen)")
+                        .foregroundColor(.white)
+                }
+                .padding(.horizontal, 24)
+                .padding(.vertical, 12)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 24)
+                        .stroke(Color.white.opacity(0.3), lineWidth: 1)
+                )
+                .background(RoundedRectangle(cornerRadius: 24).fill(Color.white.opacity(0.1)))
+            }
+            .padding(24)
+        }
+        .onReceive(timer) { _ in
+            elapsedSeconds += 1
+        }
+    }
+}
+
+// MARK: - Parent Message Card (Child View)
+
+private struct ParentMessageCard: View {
+    let message: String
+    let onDismiss: () -> Void
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Text("💌")
+                .font(.title2)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Berichtje van je ouder")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+
+                Text(message)
+                    .font(.body)
+                    .fontWeight(.medium)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+
+            Button(action: onDismiss) {
+                Image(systemName: "xmark")
+                    .foregroundColor(.secondary)
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(16)
+        .background(RoundedRectangle(cornerRadius: 12).fill(Color.purple.opacity(0.08)))
+    }
+}

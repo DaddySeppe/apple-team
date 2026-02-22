@@ -165,6 +165,14 @@ class ChildDashboardViewModel: ObservableObject {
                         uiState.needsUsagePermission = false
                         uiState.error = nil
                     }
+
+                    // Check screen time limit and send notification if needed
+                    let limit = uiState.child?.dailyScreenTimeLimitMinutes ?? 60
+                    NotificationManager.shared.checkAndNotify(
+                        childName: childName,
+                        usedMinutes: minutes,
+                        limitMinutes: limit
+                    )
                 }
             }
         }

@@ -53,6 +53,7 @@
 		9E38BCE238BE801C0C95F177 /* Cards.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0B66B408650F4049A63258AD /* Cards.swift */; };
 		A2D76191EC917AB34F73956C /* ParentScreenTimeControlViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5998827495A483F959F7D93A /* ParentScreenTimeControlViewModel.swift */; };
 		AD9CB82F9AE2B65D3F294DD2 /* SoundManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14343449689BCABE67A0040F /* SoundManager.swift */; };
+		B12B4046502BD0EDAFD2DB46 /* NotificationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = CD7FB4F67E97D7724E5FC8FA /* NotificationManager.swift */; };
 		B7CB6F9A5C38CCCF483F8FA4 /* TabComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1A96A062B0DC7507E9C09A2 /* TabComponents.swift */; };
 		BA26FD83D4947D8ACCFE975E /* GoogleSignIn in Frameworks */ = {isa = PBXBuildFile; productRef = 6E206732A7170C5CDDA6A4DB /* GoogleSignIn */; };
 		BB7E79911976E2935A610E85 /* Ads.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8CC4CCC39090071107836BB /* Ads.swift */; };
@@ -135,6 +136,7 @@
 		BFDA59735C000CB5BAF7977D /* RewardFirebaseRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RewardFirebaseRepository.swift; sourceTree = "<group>"; };
 		C046E909C0D3604F57AF89AA /* Colors.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Colors.swift; sourceTree = "<group>"; };
 		C910690601FA8B316AD3F6D3 /* ChildLoginScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChildLoginScreen.swift; sourceTree = "<group>"; };
+		CD7FB4F67E97D7724E5FC8FA /* NotificationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationManager.swift; sourceTree = "<group>"; };
 		CF0FE45B50C4882A883C8C0A /* ParentDashboardScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ParentDashboardScreen.swift; sourceTree = "<group>"; };
 		D1ED32F51509F63693F011D9 /* Tooltips.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tooltips.swift; sourceTree = "<group>"; };
 		D9DF0A7DC6102C527E41F093 /* ChildDashboardFirebaseRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChildDashboardFirebaseRepository.swift; sourceTree = "<group>"; };
@@ -353,6 +355,7 @@
 		B97F9F6A7C4B0CC00377FF9B /* Services */ = {
 			isa = PBXGroup;
 			children = (
+				CD7FB4F67E97D7724E5FC8FA /* NotificationManager.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -544,6 +547,7 @@
 				F4B59AEB595F29C9F6BA898F /* InMemoryMissionZebraRepository.swift in Sources */,
 				D1383E2DA0337CEE70E066BA /* MissionZebraApp.swift in Sources */,
 				003245B60967DD2D628DD866 /* MissionZebraRepository.swift in Sources */,
+				B12B4046502BD0EDAFD2DB46 /* NotificationManager.swift in Sources */,
 				F51F9ACCCF7CE38D18B7E33C /* ParentAuthViewModel.swift in Sources */,
 				79301603B2E5985187A0EB95 /* ParentChildrenFirebaseRepository.swift in Sources */,
 				BE0C7E8E18241A38E25E76AF /* ParentDashboardScreen.swift in Sources */,

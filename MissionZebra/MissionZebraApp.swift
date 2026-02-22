@@ -1,9 +1,10 @@
 import SwiftUI
 import FirebaseCore
+import UserNotifications
 
 // MARK: - App Delegate
 
-class AppDelegate: NSObject, UIApplicationDelegate {
+class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDelegate {
     func application(
         _ application: UIApplication,
         didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
@@ -11,7 +12,20 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         // Initialize Firebase
         FirebaseApp.configure()
 
+        // Request notification permission & allow banners while app is open
+        NotificationManager.shared.requestPermission()
+        UNUserNotificationCenter.current().delegate = self
+
         return true
+    }
+
+    // Show notification banners even when the app is in the foreground (Snapchat-style)
+    func userNotificationCenter(
+        _ center: UNUserNotificationCenter,
+        willPresent notification: UNNotification,
+        withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
+    ) {
+        completionHandler([.banner, .sound])
     }
 }
 

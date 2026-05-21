@@ -45,7 +45,7 @@ struct ChildDashboardScreen: View {
         let state = viewModel.uiState
 
         ZStack {
-            ZebraBackgroundView(rotationDegrees: -20) {
+            ChildZebraPhotoBackgroundView {
                 ZStack {
                     mainContent(state: state)
 
@@ -117,6 +117,8 @@ struct ChildDashboardScreen: View {
                         points: points,
                         streak: state.child?.streak ?? 0,
                         equippedAccessoryEmoji: viewModel.availableAccessories.first(where: { $0.id == state.child?.equippedAccessoryId })?.emoji,
+                        usedMinutes: usedMinutes,
+                        limitMinutes: limitMinutes,
                         onParentAccessClick: { showExitPinDialog = true },
                         onZebraClick: { viewModel.toggleShop(isOpen: true) }
                     )
@@ -125,9 +127,6 @@ struct ChildDashboardScreen: View {
                         ParentMessageCard(message: msg, onDismiss: { viewModel.dismissMessage() })
                             .padding(.top, 16)
                     }
-
-                    ScreenTimeCard(usedMinutes: usedMinutes, limitMinutes: limitMinutes)
-                        .padding(.top, 16)
 
                     if state.child?.isBlocked == true {
                         BlockedMessage()
@@ -144,8 +143,8 @@ struct ChildDashboardScreen: View {
                             .padding(.top, 8)
                     }
                 }
-                .padding(.horizontal, 20)
-                .padding(.vertical, 24)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 16)
             }
         }
     }
@@ -231,98 +230,144 @@ private struct ChildHeader: View {
     let points: Int
     let streak: Int
     let equippedAccessoryEmoji: String?
+    let usedMinutes: Int
+    let limitMinutes: Int
     let onParentAccessClick: () -> Void
     let onZebraClick: () -> Void
 
-    var body: some View {
-        VStack(spacing: 12) {
-            HStack(alignment: .top) {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Hoi \(name)! 🦓")
-                        .font(.title)
-                        .fontWeight(.heavy)
+    private var remainingMinutes: Int {
+        max(limitMinutes - usedMinutes, 0)
+    }
 
-                    Text("Welkom terug bij je MissionZebra-wereld!")
+    private var progress: Double {
+        min(Double(usedMinutes) / Double(max(limitMinutes, 1)), 1)
+    }
+
+    var body: some View {
+        VStack(spacing: 14) {
+            HStack(alignment: .center, spacing: 12) {
+                ZStack {
+                    Circle()
+                        .fill(Color.white.opacity(0.18))
+                        .frame(width: 64, height: 64)
+
+                    Text("🦓")
+                        .font(.system(size: 40))
+
+                    if let emoji = equippedAccessoryEmoji {
+                        Text(emoji)
+                            .font(.system(size: 18))
+                            .offset(y: -20)
+                    }
+                }
+                .onTapGesture { onZebraClick() }
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Hoi \(name)!")
+                        .font(.title2)
+                        .fontWeight(.heavy)
+                        .foregroundColor(.white)
+
+                    Text("⭐ \(points) punten  •  Level \((points / 50) + 1)")
                         .font(.subheadline)
-                        .foregroundColor(.secondary)
+                        .fontWeight(.semibold)
+                        .foregroundColor(.white.opacity(0.9))
                 }
 
                 Spacer()
 
                 HStack(spacing: 8) {
+                    if streak > 0 {
+                        Text("🔥 \(streak)")
+                            .font(.subheadline)
+                            .fontWeight(.bold)
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 9)
+                            .padding(.vertical, 6)
+                            .background(Capsule().fill(Color.white.opacity(0.14)))
+                    }
+
                     Button(action: onZebraClick) {
                         Image(systemName: "bag.fill")
-                            .frame(width: 40, height: 40)
-                            .background(Circle().fill(Color(.systemBackground)).overlay(Circle().stroke(Color.secondary.opacity(0.3), lineWidth: 1)))
+                            .font(.system(size: 17, weight: .bold))
+                            .foregroundColor(.white)
+                            .frame(width: 38, height: 38)
+                            .background(Circle().fill(Color.white.opacity(0.14)))
                     }
                     .buttonStyle(.plain)
 
                     Button(action: onParentAccessClick) {
                         Image(systemName: "lock.fill")
-                            .frame(width: 40, height: 40)
-                            .background(Circle().fill(Color(.systemBackground)).overlay(Circle().stroke(Color.secondary.opacity(0.3), lineWidth: 1)))
+                            .font(.system(size: 17, weight: .bold))
+                            .foregroundColor(.white)
+                            .frame(width: 38, height: 38)
+                            .background(Circle().fill(Color.white.opacity(0.18)))
                     }
                     .buttonStyle(.plain)
                 }
             }
 
-            HStack(spacing: 12) {
-                // Zebra badge
-                ZStack {
-                    Circle()
-                        .fill(Color.primary)
-                        .frame(width: 52, height: 52)
+            HStack(spacing: 10) {
+                HeaderMetricCard(
+                    label: "Schermtijd vandaag",
+                    value: "Nog \(remainingMinutes) min",
+                    progress: progress
+                )
 
-                    Text("🦓")
-                        .font(.system(size: 30))
-
-                    if let emoji = equippedAccessoryEmoji {
-                        Text(emoji)
-                            .font(.system(size: 18))
-                            .offset(y: -12)
-                    }
-                }
-                .onTapGesture { onZebraClick() }
-
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Jouw sterren")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-
-                    Text("\(points) punten")
-                        .font(.title3)
-                        .fontWeight(.bold)
-
-                    Text("Level \((points / 50) + 1)")
-                        .font(.caption)
-                        .fontWeight(.bold)
-                        .foregroundColor(Color(red: 0.39, green: 0.40, blue: 0.95))
-                }
-
-                Spacer()
-
-                if streak > 0 {
-                    HStack(spacing: 4) {
-                        Text("🔥")
-                            .font(.system(size: 20))
-                        Text("\(streak)")
-                            .font(.title3)
-                            .fontWeight(.black)
-                            .foregroundColor(Color(red: 0.90, green: 0.32, blue: 0.0))
-                    }
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 8)
-                    .background(
-                        LinearGradient(
-                            colors: [Color(red: 1.0, green: 0.93, blue: 0.63), Color(red: 1.0, green: 0.84, blue: 0.31)],
-                            startPoint: .top,
-                            endPoint: .bottom
-                        )
-                    )
-                    .cornerRadius(12)
-                }
+                HeaderMetricCard(
+                    label: "Jouw punten",
+                    value: "\(points)",
+                    progress: nil
+                )
             }
         }
+        .padding(14)
+        .background(
+            LinearGradient(
+                colors: [Color(hex: 0xFF111827), mzSkyDark],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+        )
+        .clipShape(RoundedRectangle(cornerRadius: 22))
+    }
+}
+
+private struct HeaderMetricCard: View {
+    let label: String
+    let value: String
+    let progress: Double?
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(label)
+                .font(.caption)
+                .fontWeight(.semibold)
+                .foregroundColor(.white.opacity(0.72))
+
+            Text(value)
+                .font(.headline)
+                .fontWeight(.heavy)
+                .foregroundColor(.white)
+
+            if let progress {
+                GeometryReader { proxy in
+                    ZStack(alignment: .leading) {
+                        Capsule()
+                            .fill(Color.white.opacity(0.18))
+                        Capsule()
+                            .fill(Color.white)
+                            .frame(width: proxy.size.width * progress)
+                    }
+                }
+                .frame(height: 5)
+                .padding(.top, 4)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
+        .background(RoundedRectangle(cornerRadius: 14).fill(Color.white.opacity(0.12)))
     }
 }
 

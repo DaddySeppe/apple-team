@@ -18,7 +18,6 @@ struct ChildrenPage: View {
     var body: some View {
         ScrollView {
             LazyVStack(spacing: 0) {
-                // 1. Header & Intro
                 headerContent
 
                 HStack {
@@ -41,7 +40,6 @@ struct ChildrenPage: View {
 
                 Spacer().frame(height: 16)
 
-                // 2. Dashboard Content
                 if children.isEmpty {
                     VStack(spacing: 16) {
                         InfoCardView(message: "Je hebt nog geen kinderen toegevoegd.")
@@ -58,11 +56,10 @@ struct ChildrenPage: View {
                     }
                 }
 
-                // 3. Banner Ad placeholder
                 Spacer().frame(height: 24)
-                BannerAdPlaceholder()
             }
         }
+        .scrollContentBackground(.hidden)
         .sheet(isPresented: $showManageDialog) {
             ManageChildrenDialog(
                 children: children,
@@ -94,31 +91,23 @@ struct ChildrenPage: View {
 // MARK: - Info Card
 
 struct InfoCardView: View {
+    @Environment(\.mzColors) private var colors
     let message: String
 
     var body: some View {
         Text(message)
             .font(.subheadline)
-            .foregroundColor(.secondary)
+            .foregroundColor(colors.onSurfaceVariant)
             .frame(maxWidth: .infinity)
             .padding(16)
-            .background(RoundedRectangle(cornerRadius: 12).fill(Color(.secondarySystemBackground)))
-    }
-}
-
-// MARK: - Banner Ad Placeholder
-
-struct BannerAdPlaceholder: View {
-    var body: some View {
-        Rectangle()
-            .fill(Color.clear)
-            .frame(height: 50)
+            .background(RoundedRectangle(cornerRadius: 12).fill(colors.surfaceVariant))
     }
 }
 
 // MARK: - Child Card (Parent View)
 
 struct ChildCardView: View {
+    @Environment(\.mzColors) private var colors
     let child: Child
     let onClick: () -> Void
 
@@ -140,23 +129,23 @@ struct ChildCardView: View {
                     Text(child.name)
                         .font(.title3)
                         .fontWeight(.bold)
-                        .foregroundColor(.primary)
+                        .foregroundColor(colors.onSurface)
 
                     Spacer()
 
                     Text("\(child.points) punten")
                         .font(.caption)
                         .fontWeight(.bold)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(colors.onSurfaceVariant)
                         .padding(.horizontal, 10)
                         .padding(.vertical, 4)
-                        .background(Capsule().fill(Color(.tertiarySystemBackground)))
+                        .background(Capsule().fill(colors.surfaceVariant))
                 }
 
                 HStack {
                     Text("Schermtijd: \(child.dailyScreenTimeUsedMinutes)/\(child.dailyScreenTimeLimitMinutes) min")
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(colors.onSurfaceVariant)
 
                     Spacer()
 
@@ -181,7 +170,11 @@ struct ChildCardView: View {
                 }
             }
             .padding(16)
-            .background(RoundedRectangle(cornerRadius: 16).fill(Color(.systemBackground)).shadow(radius: 2))
+            .background(
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(colors.surface)
+                    .shadow(color: .black.opacity(0.12), radius: 4, x: 0, y: 2)
+            )
         }
         .buttonStyle(.plain)
     }

@@ -19,6 +19,7 @@ enum ParentDashboardPage: String, CaseIterable {
 
 struct ParentDashboardScreen: View {
     @EnvironmentObject var router: NavigationRouter
+    @Environment(\.mzColors) private var colors
     @StateObject private var viewModel = ParentDashboardViewModel()
     @State private var selectedPage: ParentDashboardPage = .children
     @State private var isDeviceForChild = SessionManager.shared.isDeviceForChild()
@@ -26,14 +27,27 @@ struct ParentDashboardScreen: View {
     var body: some View {
         TabView(selection: $selectedPage) {
             ForEach(ParentDashboardPage.allCases, id: \.self) { page in
-                NavigationView {
-                    pageContent(for: page)
-                }
+                dashboardSurface(for: page)
                 .tabItem {
                     Image(systemName: page.icon)
                     Text(page.rawValue)
                 }
                 .tag(page)
+            }
+        }
+        .tint(colors.primary)
+    }
+
+    @ViewBuilder
+    private func dashboardSurface(for page: ParentDashboardPage) -> some View {
+        if page == .security {
+            ZStack {
+                colors.background.ignoresSafeArea()
+                pageContent(for: page)
+            }
+        } else {
+            ZebraBackgroundView {
+                pageContent(for: page)
             }
         }
     }
@@ -120,12 +134,16 @@ struct ParentDashboardScreen: View {
                 ParentTipCard(tip: viewModel.uiState.parentTip)
             }
         }
+        .padding(.horizontal, 20)
+        .padding(.top, 24)
+        .padding(.bottom, 16)
     }
 }
 
 // MARK: - Header Card
 
 struct ParentHeaderCard: View {
+    @Environment(\.mzColors) private var colors
     @State private var offsetY: CGFloat = -30
     @State private var opacity: Double = 0
 
@@ -134,10 +152,11 @@ struct ParentHeaderCard: View {
             Text("Ouder Dashboard")
                 .font(.title2)
                 .fontWeight(.heavy)
+                .foregroundStyle(colors.onSurface)
 
             Text("Alles onder controle, op een leuke manier.")
                 .font(.subheadline)
-                .foregroundColor(.secondary)
+                .foregroundColor(colors.onSurfaceVariant)
                 .fontWeight(.medium)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -145,8 +164,8 @@ struct ParentHeaderCard: View {
         .padding(.vertical, 20)
         .background(
             RoundedRectangle(cornerRadius: 20)
-                .fill(Color(.systemBackground).opacity(0.9))
-                .shadow(radius: 2)
+                .fill(colors.surface.opacity(0.92))
+                .shadow(color: .black.opacity(0.14), radius: 6, x: 0, y: 2)
         )
         .offset(y: offsetY)
         .opacity(opacity)
@@ -162,29 +181,31 @@ struct ParentHeaderCard: View {
 // MARK: - Tip Card
 
 struct ParentTipCard: View {
+    @Environment(\.mzColors) private var colors
     let tip: String
 
     var body: some View {
         HStack(alignment: .top, spacing: 8) {
             Image(systemName: "star.fill")
-                .foregroundColor(.accentColor)
+                .foregroundColor(colors.primary)
 
             VStack(alignment: .leading, spacing: 2) {
                 Text("Tip voor vandaag")
                     .font(.caption)
                     .fontWeight(.semibold)
-                    .foregroundColor(.accentColor)
+                    .foregroundColor(colors.primary)
 
                 Text(tip)
                     .font(.subheadline)
+                    .foregroundColor(colors.onSurface)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(12)
         .background(
             RoundedRectangle(cornerRadius: 12)
-                .fill(Color(.systemBackground))
-                .shadow(radius: 2)
+                .fill(colors.surface)
+                .shadow(color: .black.opacity(0.12), radius: 4, x: 0, y: 2)
         )
     }
 }
@@ -192,6 +213,7 @@ struct ParentTipCard: View {
 // MARK: - Family Insight Card
 
 struct FamilyInsightCard: View {
+    @Environment(\.mzColors) private var colors
     let insight: String
 
     var body: some View {
@@ -202,13 +224,14 @@ struct FamilyInsightCard: View {
             Text(insight)
                 .font(.subheadline)
                 .fontWeight(.medium)
+                .foregroundColor(colors.onSurface)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(16)
         .background(
             RoundedRectangle(cornerRadius: 12)
-                .fill(insight.contains("minder") ? Color.green.opacity(0.15) : Color.blue.opacity(0.1))
-                .shadow(radius: 2)
+                .fill(insight.contains("minder") ? colors.insightPositiveCard : colors.insightNeutralCard)
+                .shadow(color: .black.opacity(0.12), radius: 4, x: 0, y: 2)
         )
     }
 }

@@ -1,4 +1,4 @@
-// Project Setup Guide (Firebase, Google Sign-In, AdMob)
+// Project Setup Guide (Firebase, Google Sign-In)
 //
 // Follow these steps in Xcode to finish configuration.
 //
@@ -8,7 +8,6 @@
 //   - Firebase iOS SDK: https://github.com/firebase/firebase-ios-sdk
 //     - Add products you need (at minimum FirebaseAnalytics, FirebaseAuth, FirebaseFirestore as your app requires). Also add FirebaseCore.
 //   - Google Sign-In for iOS: https://github.com/google/GoogleSignIn-iOS
-//   - Google Mobile Ads (AdMob): https://github.com/googleads/swift-package-manager-google-mobile-ads
 // - Resolve packages.
 //
 // 2) Add GoogleService-Info.plist
@@ -26,14 +25,10 @@
 // 5) Initialize Firebase in App Startup
 // - The project contains a guarded initializer in App startup that calls FirebaseApp.configure() when FirebaseCore is available.
 //
-// 6) Configure AdMob App ID
-// - Add GADApplicationIdentifier to Info.plist with your AdMob App ID (e.g., ca-app-pub-xxxxxxxx~yyyyyyyy).
-//
-// 7) Build and Run
+// 6) Build and Run
 // - After adding packages and plist, clean build folder (Shift+Cmd+K) and build (Cmd+B).
 //
 // Troubleshooting
 // - If build fails due to missing packages, ensure the SPM packages are added to the correct app target.
 // - If FirebaseApp.configure() crashes, verify GoogleService-Info.plist is present in the app bundle.
 // - If Google Sign-In doesn’t return to the app, verify URL Types and reversed client ID.
-// - For AdMob test ads, enable test devices and use sample ad unit IDs during development.

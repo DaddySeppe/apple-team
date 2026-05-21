@@ -145,6 +145,8 @@ class ChildDashboardFirebaseRepository: ObservableObject {
     }
 
     func endSession(childId: String) async {
-        // Placeholder for screen time session ending
+        try? await childDoc(childId: childId).setData([
+            "lastSessionEndedAt": Timestamp(date: Date())
+        ], merge: true)
     }
 }

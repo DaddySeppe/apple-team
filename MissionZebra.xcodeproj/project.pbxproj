@@ -65,7 +65,6 @@
 		B7CB6F9A5C38CCCF483F8FA4 /* TabComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1A96A062B0DC7507E9C09A2 /* TabComponents.swift */; };
 		B85B9DA85FD9F20D967B3609 /* FirestoreDecoding.swift in Sources */ = {isa = PBXBuildFile; fileRef = 009B68A997D32FE08ACAE297 /* FirestoreDecoding.swift */; };
 		BA26FD83D4947D8ACCFE975E /* GoogleSignIn in Frameworks */ = {isa = PBXBuildFile; productRef = 6E206732A7170C5CDDA6A4DB /* GoogleSignIn */; };
-		BB7E79911976E2935A610E85 /* Ads.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8CC4CCC39090071107836BB /* Ads.swift */; };
 		BE0C7E8E18241A38E25E76AF /* ParentDashboardScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF0FE45B50C4882A883C8C0A /* ParentDashboardScreen.swift */; };
 		C465C581D1B3CBE637097EAF /* ZebraShopSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 023290FB0772A538DFDE6B8C /* ZebraShopSheet.swift */; };
 		C8A05A515A25E3F103B008E1 /* ChildLoginScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = C910690601FA8B316AD3F6D3 /* ChildLoginScreen.swift */; };
@@ -147,7 +146,6 @@
 		9F8A03F497258CD7C68331C7 /* Charts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Charts.swift; sourceTree = "<group>"; };
 		9FE94AB7E6C4A117D376DE5D /* Task.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Task.swift; sourceTree = "<group>"; };
 		A69CD075179152D569860D85 /* ParentScreenTimeControlScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ParentScreenTimeControlScreen.swift; sourceTree = "<group>"; };
-		A8CC4CCC39090071107836BB /* Ads.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Ads.swift; sourceTree = "<group>"; };
 		A9D8530F962FA6A2C3A66277 /* ParentOnlineSafetyScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ParentOnlineSafetyScreen.swift; sourceTree = "<group>"; };
 		AEA35CF3D7B7384436CC13E0 /* InMemoryMissionZebraRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InMemoryMissionZebraRepository.swift; sourceTree = "<group>"; };
 		B317C7ED6DBBAEEEB1AE3CA7 /* AddTaskDialog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddTaskDialog.swift; sourceTree = "<group>"; };
@@ -347,7 +345,6 @@
 		A5C867E9E792BC56F7F6FCA1 /* Parent */ = {
 			isa = PBXGroup;
 			children = (
-				A8CC4CCC39090071107836BB /* Ads.swift */,
 				1B926B2844174C2D30B41B2F /* DeviceModeScreen.swift */,
 				04C29A63EA78A21B38290000 /* ParentAuthViewModel.swift */,
 				CF0FE45B50C4882A883C8C0A /* ParentDashboardScreen.swift */,
@@ -565,7 +562,6 @@
 				53A4D6D877940C34AED0ACEC /* Accessory.swift in Sources */,
 				FB672C57073F27FB8D79B985 /* AddRewardDialog.swift in Sources */,
 				D79E94859491D2B24651B250 /* AddTaskDialog.swift in Sources */,
-				BB7E79911976E2935A610E85 /* Ads.swift in Sources */,
 				D3701B371B7001FB71BFC49B /* Animations.swift in Sources */,
 				ED9A4F81AD44396A8A81296D /* AppNavigation.swift in Sources */,
 				1C1BD74C435ED777F2AFF1B9 /* AuthRepository.swift in Sources */,

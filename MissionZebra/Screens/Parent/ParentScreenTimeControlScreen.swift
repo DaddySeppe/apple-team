@@ -54,7 +54,6 @@ struct ParentScreenTimeControlScreen: View {
                         )
                     }
 
-                    // BannerAdView placeholder
                     Rectangle()
                         .fill(Color.clear)
                         .frame(height: 50)

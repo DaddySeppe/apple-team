@@ -7,6 +7,7 @@ struct ZebraBackgroundView<Content: View>: View {
     @ViewBuilder let content: Content
 
     @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.mzColors) private var colors
 
     private var stripeAlpha: Double {
         colorScheme == .dark ? 0.3 : 0.16
@@ -14,7 +15,7 @@ struct ZebraBackgroundView<Content: View>: View {
 
     var body: some View {
         ZStack {
-            Color.accentColor
+            colors.primary
                 .ignoresSafeArea()
 
             Canvas { context, size in
@@ -38,6 +39,35 @@ struct ZebraBackgroundView<Content: View>: View {
                 }
             }
             .ignoresSafeArea()
+
+            content
+        }
+    }
+}
+
+// MARK: - Child Zebra Photo Background
+
+struct ChildZebraPhotoBackgroundView<Content: View>: View {
+    @ViewBuilder let content: Content
+
+    var body: some View {
+        ZStack {
+            GeometryReader { proxy in
+                VStack(spacing: 0) {
+                    ForEach(0..<2, id: \.self) { _ in
+                        Image("ZebraStripes")
+                            .resizable()
+                            .scaledToFill()
+                            .frame(width: proxy.size.width, height: proxy.size.height / 2)
+                            .clipped()
+                    }
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            }
+            .ignoresSafeArea()
+
+            Color.black.opacity(0.18)
+                .ignoresSafeArea()
 
             content
         }

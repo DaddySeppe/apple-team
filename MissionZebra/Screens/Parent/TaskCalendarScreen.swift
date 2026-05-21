@@ -34,7 +34,6 @@ struct TaskCalendarScreen: View {
                     .frame(maxWidth: .infinity)
                     .background(RoundedRectangle(cornerRadius: 12).fill(Color(.secondarySystemBackground)))
 
-                    // Calendar placeholder
                     TaskCalendarView()
 
                     // Info card
@@ -57,7 +56,7 @@ struct TaskCalendarScreen: View {
     }
 }
 
-// MARK: - Task Calendar Placeholder
+// MARK: - Task Calendar View
 
 struct TaskCalendarView: View {
     @State private var selectedDate = Date()

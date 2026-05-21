@@ -142,6 +142,25 @@ class ParentChildrenFirebaseRepository: ObservableObject {
             .collection("children").document(childId).delete()
     }
 
+    func deleteTutorialChildren() async -> Result<Void, Error> {
+        do {
+            guard let user = auth.currentUser else {
+                throw NSError(domain: "", code: -1, userInfo: [NSLocalizedDescriptionKey: "Niet ingelogd"])
+            }
+            let snapshot = try await childrenCollection(user.uid)
+                .whereField("isTutorial", isEqualTo: true)
+                .getDocuments()
+            guard !snapshot.documents.isEmpty else { return .success(()) }
+
+            let batch = firestore.batch()
+            snapshot.documents.forEach { batch.deleteDocument($0.reference) }
+            try await batch.commit()
+            return .success(())
+        } catch {
+            return .failure(error)
+        }
+    }
+
     func addPoints(childId: String, pointsToAdd: Int) async -> Result<Void, Error> {
         do {
             guard let user = auth.currentUser else {

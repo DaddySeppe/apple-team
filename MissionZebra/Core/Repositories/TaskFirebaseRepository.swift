@@ -33,7 +33,9 @@ class TaskFirebaseRepository: ObservableObject {
                     points: data["points"] as? Int ?? 0,
                     childId: data["childId"] as? String,
                     pendingApproval: data["pendingApproval"] as? Bool ?? false,
-                    completed: data["completed"] as? Bool ?? false
+                    completed: data["completed"] as? Bool ?? false,
+                    dueDate: data["dueDate"] as? String,
+                    recurrence: data["recurrence"] as? String
                 )
             }
 
@@ -58,6 +60,23 @@ class TaskFirebaseRepository: ObservableObject {
         }
     }
 
+    func deleteTutorialData() async -> Result<Void, Error> {
+        do {
+            guard let collection = tasksCollection else {
+                throw NSError(domain: "", code: -1, userInfo: [NSLocalizedDescriptionKey: "Niet ingelogd"])
+            }
+            let snapshot = try await collection.whereField("isTutorial", isEqualTo: true).getDocuments()
+            guard !snapshot.documents.isEmpty else { return .success(()) }
+
+            let batch = firestore.batch()
+            snapshot.documents.forEach { batch.deleteDocument($0.reference) }
+            try await batch.commit()
+            return .success(())
+        } catch {
+            return .failure(error)
+        }
+    }
+
     func addTask(title: String, points: Int, childId: String) async -> Result<Void, Error> {
         do {
             guard let collection = tasksCollection else {
@@ -68,7 +87,8 @@ class TaskFirebaseRepository: ObservableObject {
                 "points": points,
                 "childId": childId,
                 "pendingApproval": false,
-                "completed": false
+                "completed": false,
+                "dueDate": Self.todayKey()
             ])
             return .success(())
         } catch {
@@ -141,16 +161,27 @@ class TaskFirebaseRepository: ObservableObject {
             guard let collection = tasksCollection else {
                 throw NSError(domain: "", code: -1, userInfo: [NSLocalizedDescriptionKey: "Niet ingelogd"])
             }
-            try await collection.document(task.id).setData([
+            var data: [String: Any] = [
                 "title": task.title,
                 "points": task.points,
                 "childId": task.childId as Any,
                 "pendingApproval": task.pendingApproval,
                 "completed": task.completed
-            ])
+            ]
+            data["dueDate"] = task.dueDate ?? FieldValue.delete()
+            data["recurrence"] = task.recurrence ?? FieldValue.delete()
+            try await collection.document(task.id).setData(data, merge: true)
             return .success(())
         } catch {
             return .failure(error)
         }
+    }
+
+    private static func todayKey() -> String {
+        let formatter = DateFormatter()
+        formatter.calendar = Calendar(identifier: .gregorian)
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.dateFormat = "yyyy-MM-dd"
+        return formatter.string(from: Date())
     }
 }

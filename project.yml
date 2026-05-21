@@ -44,3 +44,20 @@ targets:
         product: FirebaseMessaging
       - package: GoogleSignIn
     postCompileScripts: []
+
+schemes:
+  MissionZebra:
+    build:
+      targets:
+        MissionZebra: all
+    run:
+      config: Debug
+    test:
+      config: Debug
+      targets: []
+    profile:
+      config: Release
+    analyze:
+      config: Debug
+    archive:
+      config: Release

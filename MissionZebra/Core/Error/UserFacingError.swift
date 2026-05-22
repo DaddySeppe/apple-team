@@ -27,6 +27,10 @@ enum UserFacingError {
             case .tooManyRequests:
                 return "Er zijn te veel pogingen gedaan. Wacht even en probeer opnieuw."
             default:
+                if let response = nsError.userInfo["FIRAuthErrorUserInfoDeserializedResponseKey"] as? [String: Any],
+                   let message = response["message"] as? String {
+                    return firebaseAuthBackendMessage(message, fallback: defaultMessage)
+                }
                 return defaultMessage
             }
         }
@@ -68,6 +72,21 @@ enum UserFacingError {
             return "Je hebt dit item al."
         default:
             return nil
+        }
+    }
+
+    private static func firebaseAuthBackendMessage(_ message: String, fallback: String) -> String {
+        switch message {
+        case let value where value.contains("API key expired") || value.contains("API_KEY_INVALID"):
+            return "Firebase is niet juist geconfigureerd. De API key in GoogleService-Info.plist is verlopen."
+        case let value where value.contains("EMAIL_NOT_FOUND"):
+            return "Er bestaat nog geen account met dit e-mailadres."
+        case let value where value.contains("INVALID_PASSWORD") || value.contains("INVALID_LOGIN_CREDENTIALS"):
+            return "E-mailadres of wachtwoord klopt niet."
+        case let value where value.contains("USER_DISABLED"):
+            return "Dit account is uitgeschakeld."
+        default:
+            return fallback
         }
     }
 }

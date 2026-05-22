@@ -181,7 +181,8 @@ struct ParentLoginScreen: View {
         auth.signIn(withEmail: email.trimmingCharacters(in: .whitespaces), password: password) { result, err in
             isLoading = false
             if let err = err {
-                error = err.localizedDescription
+                print("[ParentLogin] Email login failed:", err)
+                error = err.userFriendlyMessage("Inloggen is niet gelukt. Controleer je gegevens en probeer opnieuw.")
             } else {
                 SessionManager.shared.setParentLoggedIn()
                 fetchPinAndContinue()
@@ -208,7 +209,8 @@ struct ParentLoginScreen: View {
         auth.createUser(withEmail: email.trimmingCharacters(in: .whitespaces), password: password) { result, err in
             isLoading = false
             if let err = err {
-                error = err.localizedDescription
+                print("[ParentLogin] Register failed:", err)
+                error = err.userFriendlyMessage("Account aanmaken is niet gelukt. Probeer het opnieuw.")
             } else {
                 showPinSetup = true
             }
@@ -238,7 +240,8 @@ struct ParentLoginScreen: View {
         GIDSignIn.sharedInstance.signIn(withPresenting: rootVC) { result, err in
             if let err = err {
                 isLoading = false
-                error = err.localizedDescription
+                print("[ParentLogin] Google sign-in failed:", err)
+                error = err.userFriendlyMessage("Google inloggen is niet gelukt. Probeer het opnieuw.")
                 return
             }
 
@@ -257,7 +260,8 @@ struct ParentLoginScreen: View {
             auth.signIn(with: credential) { _, err in
                 isLoading = false
                 if let err = err {
-                    error = err.localizedDescription
+                    print("[ParentLogin] Firebase Google auth failed:", err)
+                    error = err.userFriendlyMessage("Google inloggen is niet gelukt. Probeer het opnieuw.")
                 } else {
                     handleGoogleSignInSuccess()
                 }

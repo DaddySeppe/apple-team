@@ -1,8 +1,11 @@
 import SwiftUI
+import AuthenticationServices
+import CryptoKit
 import FirebaseAuth
 import FirebaseFirestore
 import GoogleSignIn
 import FirebaseCore
+import Security
 
 struct ParentLoginScreen: View {
     @EnvironmentObject var router: NavigationRouter
@@ -18,6 +21,7 @@ struct ParentLoginScreen: View {
     @State private var newPin = ""
     @State private var pinError: String?
     @State private var isRegisterMode = false
+    @State private var currentAppleNonce: String?
 
     private let auth = Auth.auth()
     private let firestore = Firestore.firestore()
@@ -131,6 +135,19 @@ struct ParentLoginScreen: View {
                     Spacer().frame(height: 16)
 
                     // Google Sign-In button
+                    SignInWithAppleButton(.signIn) { request in
+                        prepareAppleSignIn(request)
+                    } onCompletion: { result in
+                        handleAppleSignIn(result)
+                    }
+                    .signInWithAppleButtonStyle(.black)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 52)
+                    .disabled(isLoading)
+                    .opacity(isLoading ? 0.6 : 1)
+
+                    Spacer().frame(height: 12)
+
                     Button(action: {
                         if !isLoading { signInWithGoogle() }
                     }) {
@@ -164,7 +181,7 @@ struct ParentLoginScreen: View {
                 pinError = nil
             }
         } message: {
-            Text("Kies een 4-cijferige code. Deze heb je nodig om van profiel te wisselen of om het kind af te melden.")
+            Text(pinError ?? "Kies een 4-cijferige code. Deze heb je nodig om van profiel te wisselen of om het kind af te melden.")
         }
     }
 
@@ -263,14 +280,87 @@ struct ParentLoginScreen: View {
                     print("[ParentLogin] Firebase Google auth failed:", err)
                     error = err.userFriendlyMessage("Google inloggen is niet gelukt. Probeer het opnieuw.")
                 } else {
-                    handleGoogleSignInSuccess()
+                    handleFederatedSignInSuccess()
                 }
             }
         }
     }
 
-    private func handleGoogleSignInSuccess() {
-        SessionManager.shared.setParentLoggedIn()
+    private func prepareAppleSignIn(_ request: ASAuthorizationAppleIDRequest) {
+        do {
+            let nonce = try AppleSignInNonce.randomNonceString()
+            currentAppleNonce = nonce
+            isLoading = true
+            error = nil
+            request.requestedScopes = [.fullName, .email]
+            request.nonce = AppleSignInNonce.sha256(nonce)
+        } catch {
+            currentAppleNonce = nil
+            isLoading = false
+            self.error = "Apple inloggen kon niet gestart worden. Probeer opnieuw."
+        }
+    }
+
+    private func handleAppleSignIn(_ result: Result<ASAuthorization, Error>) {
+        switch result {
+        case .success(let authorization):
+            completeAppleSignIn(authorization)
+        case .failure(let authError):
+            isLoading = false
+            currentAppleNonce = nil
+
+            if let authorizationError = authError as? ASAuthorizationError,
+               authorizationError.code == .canceled {
+                return
+            }
+
+            print("[ParentLogin] Apple sign-in failed:", authError)
+            error = authError.userFriendlyMessage("Apple inloggen is niet gelukt. Probeer het opnieuw.")
+        }
+    }
+
+    private func completeAppleSignIn(_ authorization: ASAuthorization) {
+        guard let nonce = currentAppleNonce else {
+            isLoading = false
+            error = "Apple inloggen is niet gelukt. Probeer het opnieuw."
+            return
+        }
+
+        guard let appleIDCredential = authorization.credential as? ASAuthorizationAppleIDCredential else {
+            isLoading = false
+            currentAppleNonce = nil
+            error = "Apple inloggen is niet gelukt. Probeer het opnieuw."
+            return
+        }
+
+        guard let appleIDToken = appleIDCredential.identityToken,
+              let idTokenString = String(data: appleIDToken, encoding: .utf8) else {
+            isLoading = false
+            currentAppleNonce = nil
+            error = "Apple inloggen is niet gelukt. Probeer het opnieuw."
+            return
+        }
+
+        let credential = OAuthProvider.appleCredential(
+            withIDToken: idTokenString,
+            rawNonce: nonce,
+            fullName: appleIDCredential.fullName
+        )
+
+        auth.signIn(with: credential) { _, err in
+            isLoading = false
+            currentAppleNonce = nil
+
+            if let err = err {
+                print("[ParentLogin] Firebase Apple auth failed:", err)
+                error = err.userFriendlyMessage("Apple inloggen is niet gelukt. Probeer het opnieuw.")
+            } else {
+                handleFederatedSignInSuccess()
+            }
+        }
+    }
+
+    private func handleFederatedSignInSuccess() {
         guard let user = auth.currentUser else {
             showPinSetup = true
             return
@@ -313,11 +403,14 @@ struct ParentLoginScreen: View {
                     }
                 }
             }
+            SessionManager.shared.setParentLoggedIn()
             navigateToModeChoice()
         }
     }
 
     private func savePinAndContinue() {
+        pinError = nil
+
         if newPin.count == 4 {
             guard let user = auth.currentUser else {
                 pinError = "Niet ingelogd"
@@ -349,5 +442,34 @@ struct ParentLoginScreen: View {
 
     private func navigateToModeChoice() {
         router.navigate(to: .deviceMode)
+    }
+}
+
+private enum AppleSignInNonce {
+    enum NonceError: Error {
+        case generationFailed(OSStatus)
+    }
+
+    static func randomNonceString(length: Int = 32) throws -> String {
+        precondition(length > 0)
+
+        var randomBytes = [UInt8](repeating: 0, count: length)
+        let status = SecRandomCopyBytes(kSecRandomDefault, randomBytes.count, &randomBytes)
+
+        guard status == errSecSuccess else {
+            throw NonceError.generationFailed(status)
+        }
+
+        let charset = Array("0123456789ABCDEFGHIJKLMNOPQRSTUVXYZabcdefghijklmnopqrstuvwxyz-._")
+        let nonce = randomBytes.map { charset[Int($0) % charset.count] }
+
+        return String(nonce)
+    }
+
+    static func sha256(_ input: String) -> String {
+        let inputData = Data(input.utf8)
+        let hashedData = SHA256.hash(data: inputData)
+
+        return hashedData.map { String(format: "%02x", $0) }.joined()
     }
 }

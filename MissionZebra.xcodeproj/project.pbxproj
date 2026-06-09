@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 77;
+	objectVersion = 63;
 	objects = {
 
 /* Begin PBXBuildFile section */
@@ -129,6 +129,7 @@
 		6540E8B352E1EE80944522B6 /* Accessory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Accessory.swift; sourceTree = "<group>"; };
 		6E5AC091DC9B410FC049B10E /* Child.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Child.swift; sourceTree = "<group>"; };
 		6F9EBDD45A244BDB32C1124B /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		70A087C4135A4B5485D3C9F0 /* MissionZebra.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = MissionZebra.entitlements; sourceTree = "<group>"; };
 		703AF6EDBDAA80544942870D /* ZebraShopRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ZebraShopRepository.swift; sourceTree = "<group>"; };
 		711EF956267E1A2FB115D78A /* TasksTab.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TasksTab.swift; sourceTree = "<group>"; };
 		72EA66FCC872E802630A50D8 /* LanguagePreferences.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LanguagePreferences.swift; sourceTree = "<group>"; };
@@ -151,7 +152,7 @@
 		B317C7ED6DBBAEEEB1AE3CA7 /* AddTaskDialog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddTaskDialog.swift; sourceTree = "<group>"; };
 		B3BDCB07303D6A0E54237F77 /* RewardsTab.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RewardsTab.swift; sourceTree = "<group>"; };
 		B4557D3EF8E2717D0A5837F2 /* TaskCalendarViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaskCalendarViewModel.swift; sourceTree = "<group>"; };
-		B8BC9003AB93D68B9FA6AB96 /* MissionZebra.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = MissionZebra.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		B8BC9003AB93D68B9FA6AB96 /* MissionZebra.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MissionZebra.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		B9FBF177D46B211859229FD4 /* RiskAnalyzer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RiskAnalyzer.swift; sourceTree = "<group>"; };
 		BFDA59735C000CB5BAF7977D /* RewardFirebaseRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RewardFirebaseRepository.swift; sourceTree = "<group>"; };
 		C046E909C0D3604F57AF89AA /* Colors.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Colors.swift; sourceTree = "<group>"; };
@@ -437,6 +438,7 @@
 			children = (
 				4404CA1E82A5B028E9D30929 /* Assets.xcassets */,
 				E4FBE4943EA6A073E256199B /* GoogleService-Info.plist */,
+				70A087C4135A4B5485D3C9F0 /* MissionZebra.entitlements */,
 				6F9EBDD45A244BDB32C1124B /* Info.plist */,
 				06DF4AF825BFC77E22331DC2 /* MissionZebraApp.swift */,
 				5A88FC293A5D4EB77370E178 /* Auth */,
@@ -513,8 +515,12 @@
 				LastUpgradeCheck = 1500;
 				TargetAttributes = {
 					8AE5CD6232BC71A29BA6FE73 = {
-						DevelopmentTeam = "";
 						ProvisioningStyle = Automatic;
+						SystemCapabilities = {
+							com.apple.SignInWithApple = {
+								enabled = 1;
+							};
+						};
 					};
 				};
 			};
@@ -532,7 +538,6 @@
 				F678D8B08BC621213E0867DB /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
 				0CC29BA8225C214CC3719864 /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */,
 			);
-			preferredProjectObjectVersion = 77;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
@@ -761,10 +766,11 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CODE_SIGN_ENTITLEMENTS = MissionZebra/MissionZebra.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = "";
+				CURRENT_PROJECT_VERSION = 2;
+				DEVELOPMENT_TEAM = MK69VX9ZR4;
 				INFOPLIST_FILE = MissionZebra/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -784,10 +790,11 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CODE_SIGN_ENTITLEMENTS = MissionZebra/MissionZebra.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = "";
+				CURRENT_PROJECT_VERSION = 2;
+				DEVELOPMENT_TEAM = MK69VX9ZR4;
 				INFOPLIST_FILE = MissionZebra/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
 				LD_RUNPATH_SEARCH_PATHS = (

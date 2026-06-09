@@ -26,6 +26,10 @@ enum UserFacingError {
                 return "Er is geen goede internetverbinding. Controleer je verbinding en probeer opnieuw."
             case .tooManyRequests:
                 return "Er zijn te veel pogingen gedaan. Wacht even en probeer opnieuw."
+            case .operationNotAllowed:
+                return "Deze loginmethode is nog niet geactiveerd. Probeer een andere methode of contacteer support."
+            case .accountExistsWithDifferentCredential:
+                return "Er bestaat al een account met dit e-mailadres. Log in met de oorspronkelijke methode."
             default:
                 if let response = nsError.userInfo["FIRAuthErrorUserInfoDeserializedResponseKey"] as? [String: Any],
                    let message = response["message"] as? String {
@@ -85,6 +89,8 @@ enum UserFacingError {
             return "E-mailadres of wachtwoord klopt niet."
         case let value where value.contains("USER_DISABLED"):
             return "Dit account is uitgeschakeld."
+        case let value where value.contains("OPERATION_NOT_ALLOWED"):
+            return "Deze loginmethode is nog niet geactiveerd. Probeer een andere methode of contacteer support."
         default:
             return fallback
         }

@@ -14,7 +14,7 @@ class SoundManager {
     private var isLoaded = false
 
     init() {
-        // Placeholder: load sounds from bundle if they exist
+        // Load bundled sounds when present; missing files simply keep the app silent.
         loadSoundIfAvailable(.success, filename: "success")
         loadSoundIfAvailable(.coin, filename: "coin")
         loadSoundIfAvailable(.streak, filename: "streak")

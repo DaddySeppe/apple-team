@@ -1,5 +1,10 @@
 import SwiftUI
+import AuthenticationServices
+import CryptoKit
 import FirebaseAuth
+import FirebaseFirestore
+import GoogleSignIn
+import Security
 
 enum ParentDashboardPage: String, CaseIterable {
     case children = "Kinderen"
@@ -19,6 +24,7 @@ enum ParentDashboardPage: String, CaseIterable {
 
 struct ParentDashboardScreen: View {
     @EnvironmentObject var router: NavigationRouter
+    @Environment(\.mzColors) private var colors
     @StateObject private var viewModel = ParentDashboardViewModel()
     @State private var selectedPage: ParentDashboardPage = .children
     @State private var isDeviceForChild = SessionManager.shared.isDeviceForChild()
@@ -26,14 +32,27 @@ struct ParentDashboardScreen: View {
     var body: some View {
         TabView(selection: $selectedPage) {
             ForEach(ParentDashboardPage.allCases, id: \.self) { page in
-                NavigationView {
-                    pageContent(for: page)
-                }
+                dashboardSurface(for: page)
                 .tabItem {
                     Image(systemName: page.icon)
                     Text(page.rawValue)
                 }
                 .tag(page)
+            }
+        }
+        .tint(colors.primary)
+    }
+
+    @ViewBuilder
+    private func dashboardSurface(for page: ParentDashboardPage) -> some View {
+        if page == .security {
+            ZStack {
+                colors.background.ignoresSafeArea()
+                pageContent(for: page)
+            }
+        } else {
+            ZebraBackgroundView {
+                pageContent(for: page)
             }
         }
     }
@@ -88,8 +107,13 @@ struct ParentDashboardScreen: View {
                 onGoToPremiumDashboard: { router.navigate(to: .parentPremiumDashboard) },
                 onLogout: {
                     SessionManager.shared.clearSession()
+                    ParentPinManager.shared.clearParentPin()
                     try? Auth.auth().signOut()
+                    GIDSignIn.sharedInstance.signOut()
                     router.goToRoot()
+                },
+                onDeleteAccount: {
+                    try await deleteCurrentParentAccount()
                 },
                 isDeviceForChild: isDeviceForChild,
                 onSetDeviceForChild: {
@@ -120,12 +144,204 @@ struct ParentDashboardScreen: View {
                 ParentTipCard(tip: viewModel.uiState.parentTip)
             }
         }
+        .padding(.horizontal, 20)
+        .padding(.top, 24)
+        .padding(.bottom, 16)
+    }
+
+    private func deleteCurrentParentAccount() async throws {
+        guard let user = Auth.auth().currentUser else {
+            throw NSError(
+                domain: "MissionZebraAccountDeletion",
+                code: -1,
+                userInfo: [NSLocalizedDescriptionKey: "Je sessie is verlopen. Log opnieuw in en probeer het nog eens."]
+            )
+        }
+
+        if user.providerData.contains(where: { $0.providerID == "apple.com" }) {
+            let appleCredential = try await AppleAccountDeletionAuthorizer.shared.requestCredential()
+            try await user.reauthenticate(with: appleCredential.credential)
+            try await Auth.auth().revokeToken(withAuthorizationCode: appleCredential.authorizationCode)
+        } else {
+            let token = try await user.getIDTokenResult(forcingRefresh: true)
+            guard Date().timeIntervalSince(token.authDate) < 5 * 60 else {
+                throw NSError(
+                    domain: "MissionZebraAccountDeletion",
+                    code: -2,
+                    userInfo: [NSLocalizedDescriptionKey: "Log opnieuw in en probeer daarna je account te verwijderen."]
+                )
+            }
+        }
+
+        try await deleteParentFirestoreData(parentUid: user.uid)
+        ParentPinManager.shared.clearParentPin()
+        try await user.delete()
+        GIDSignIn.sharedInstance.signOut()
+
+        await MainActor.run {
+            SessionManager.shared.clearSession()
+            router.goToRoot()
+        }
+    }
+
+    private func deleteParentFirestoreData(parentUid: String) async throws {
+        let firestore = Firestore.firestore()
+        let parentRef = firestore.collection("parents").document(parentUid)
+
+        let childrenSnapshot = try await parentRef.collection("children").getDocuments()
+        for childDocument in childrenSnapshot.documents {
+            try await deleteCollection(childDocument.reference.collection("screenSessions"))
+        }
+
+        try await deleteCollection(parentRef.collection("tasks"))
+        try await deleteCollection(parentRef.collection("rewards"))
+        try await deleteCollection(parentRef.collection("children"))
+        try await parentRef.delete()
+    }
+
+    private func deleteCollection(_ collection: CollectionReference, batchSize: Int = 400) async throws {
+        while true {
+            let snapshot = try await collection.limit(to: batchSize).getDocuments()
+            guard !snapshot.documents.isEmpty else { return }
+
+            let batch = Firestore.firestore().batch()
+            snapshot.documents.forEach { batch.deleteDocument($0.reference) }
+            try await batch.commit()
+        }
+    }
+}
+
+private struct AppleDeletionCredential {
+    let credential: AuthCredential
+    let authorizationCode: String
+}
+
+private final class AppleAccountDeletionAuthorizer: NSObject, ASAuthorizationControllerDelegate, ASAuthorizationControllerPresentationContextProviding {
+    static let shared = AppleAccountDeletionAuthorizer()
+
+    private var continuation: CheckedContinuation<AppleDeletionCredential, Error>?
+    private var currentNonce: String?
+
+    func requestCredential() async throws -> AppleDeletionCredential {
+        guard continuation == nil else {
+            throw NSError(
+                domain: "MissionZebraAccountDeletion",
+                code: -3,
+                userInfo: [NSLocalizedDescriptionKey: "Er loopt al een verwijderactie."]
+            )
+        }
+
+        let nonce = try AccountDeletionNonce.randomNonceString()
+        currentNonce = nonce
+
+        return try await withCheckedThrowingContinuation { continuation in
+            self.continuation = continuation
+
+            let provider = ASAuthorizationAppleIDProvider()
+            let request = provider.createRequest()
+            request.requestedScopes = [.fullName, .email]
+            request.nonce = AccountDeletionNonce.sha256(nonce)
+
+            let controller = ASAuthorizationController(authorizationRequests: [request])
+            controller.delegate = self
+            controller.presentationContextProvider = self
+            controller.performRequests()
+        }
+    }
+
+    func authorizationController(controller: ASAuthorizationController, didCompleteWithAuthorization authorization: ASAuthorization) {
+        guard let continuation else { return }
+        defer { reset() }
+
+        guard let nonce = currentNonce,
+              let appleCredential = authorization.credential as? ASAuthorizationAppleIDCredential,
+              let identityToken = appleCredential.identityToken,
+              let idToken = String(data: identityToken, encoding: .utf8),
+              let authorizationCode = appleCredential.authorizationCode,
+              let authorizationCodeString = String(data: authorizationCode, encoding: .utf8) else {
+            continuation.resume(throwing: NSError(
+                domain: "MissionZebraAccountDeletion",
+                code: -4,
+                userInfo: [NSLocalizedDescriptionKey: "Apple bevestiging is niet gelukt. Probeer opnieuw."]
+            ))
+            return
+        }
+
+        let credential = OAuthProvider.credential(
+            providerID: .apple,
+            idToken: idToken,
+            rawNonce: nonce
+        )
+
+        continuation.resume(returning: AppleDeletionCredential(
+            credential: credential,
+            authorizationCode: authorizationCodeString
+        ))
+    }
+
+    func authorizationController(controller: ASAuthorizationController, didCompleteWithError error: Error) {
+        guard let continuation else { return }
+        defer { reset() }
+
+        if let authorizationError = error as? ASAuthorizationError,
+           authorizationError.code == .canceled {
+            continuation.resume(throwing: NSError(
+                domain: "MissionZebraAccountDeletion",
+                code: -5,
+                userInfo: [NSLocalizedDescriptionKey: "Account verwijderen is geannuleerd."]
+            ))
+            return
+        }
+
+        continuation.resume(throwing: error)
+    }
+
+    func presentationAnchor(for controller: ASAuthorizationController) -> ASPresentationAnchor {
+        UIApplication.shared.connectedScenes
+            .compactMap { $0 as? UIWindowScene }
+            .flatMap(\.windows)
+            .first { $0.isKeyWindow } ?? ASPresentationAnchor()
+    }
+
+    private func reset() {
+        continuation = nil
+        currentNonce = nil
+    }
+}
+
+private enum AccountDeletionNonce {
+    enum NonceError: Error {
+        case generationFailed(OSStatus)
+    }
+
+    static func randomNonceString(length: Int = 32) throws -> String {
+        precondition(length > 0)
+
+        var randomBytes = [UInt8](repeating: 0, count: length)
+        let status = SecRandomCopyBytes(kSecRandomDefault, randomBytes.count, &randomBytes)
+
+        guard status == errSecSuccess else {
+            throw NonceError.generationFailed(status)
+        }
+
+        let charset = Array("0123456789ABCDEFGHIJKLMNOPQRSTUVXYZabcdefghijklmnopqrstuvwxyz-._")
+        let nonce = randomBytes.map { charset[Int($0) % charset.count] }
+
+        return String(nonce)
+    }
+
+    static func sha256(_ input: String) -> String {
+        let inputData = Data(input.utf8)
+        let hashedData = SHA256.hash(data: inputData)
+
+        return hashedData.map { String(format: "%02x", $0) }.joined()
     }
 }
 
 // MARK: - Header Card
 
 struct ParentHeaderCard: View {
+    @Environment(\.mzColors) private var colors
     @State private var offsetY: CGFloat = -30
     @State private var opacity: Double = 0
 
@@ -134,10 +350,11 @@ struct ParentHeaderCard: View {
             Text("Ouder Dashboard")
                 .font(.title2)
                 .fontWeight(.heavy)
+                .foregroundStyle(colors.onSurface)
 
             Text("Alles onder controle, op een leuke manier.")
                 .font(.subheadline)
-                .foregroundColor(.secondary)
+                .foregroundColor(colors.onSurfaceVariant)
                 .fontWeight(.medium)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -145,8 +362,8 @@ struct ParentHeaderCard: View {
         .padding(.vertical, 20)
         .background(
             RoundedRectangle(cornerRadius: 20)
-                .fill(Color(.systemBackground).opacity(0.9))
-                .shadow(radius: 2)
+                .fill(colors.surface.opacity(0.92))
+                .shadow(color: .black.opacity(0.14), radius: 6, x: 0, y: 2)
         )
         .offset(y: offsetY)
         .opacity(opacity)
@@ -162,29 +379,31 @@ struct ParentHeaderCard: View {
 // MARK: - Tip Card
 
 struct ParentTipCard: View {
+    @Environment(\.mzColors) private var colors
     let tip: String
 
     var body: some View {
         HStack(alignment: .top, spacing: 8) {
             Image(systemName: "star.fill")
-                .foregroundColor(.accentColor)
+                .foregroundColor(colors.primary)
 
             VStack(alignment: .leading, spacing: 2) {
                 Text("Tip voor vandaag")
                     .font(.caption)
                     .fontWeight(.semibold)
-                    .foregroundColor(.accentColor)
+                    .foregroundColor(colors.primary)
 
                 Text(tip)
                     .font(.subheadline)
+                    .foregroundColor(colors.onSurface)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(12)
         .background(
             RoundedRectangle(cornerRadius: 12)
-                .fill(Color(.systemBackground))
-                .shadow(radius: 2)
+                .fill(colors.surface)
+                .shadow(color: .black.opacity(0.12), radius: 4, x: 0, y: 2)
         )
     }
 }
@@ -192,6 +411,7 @@ struct ParentTipCard: View {
 // MARK: - Family Insight Card
 
 struct FamilyInsightCard: View {
+    @Environment(\.mzColors) private var colors
     let insight: String
 
     var body: some View {
@@ -202,13 +422,14 @@ struct FamilyInsightCard: View {
             Text(insight)
                 .font(.subheadline)
                 .fontWeight(.medium)
+                .foregroundColor(colors.onSurface)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(16)
         .background(
             RoundedRectangle(cornerRadius: 12)
-                .fill(insight.contains("minder") ? Color.green.opacity(0.15) : Color.blue.opacity(0.1))
-                .shadow(radius: 2)
+                .fill(insight.contains("minder") ? colors.insightPositiveCard : colors.insightNeutralCard)
+                .shadow(color: .black.opacity(0.12), radius: 4, x: 0, y: 2)
         )
     }
 }

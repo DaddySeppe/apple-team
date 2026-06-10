@@ -11,6 +11,7 @@ class SessionManager {
     private let keyChildId = "child_id"
     private let keyChildName = "child_name"
     private let keyDeviceForChild = "device_for_child"
+    private let keyTutorialActive = "tutorial_active"
 
     static let roleParent = "parent"
     static let roleChild = "child"
@@ -41,6 +42,10 @@ class SessionManager {
         d.removeObject(forKey: keyRole)
         d.removeObject(forKey: keyChildId)
         d.removeObject(forKey: keyChildName)
+    }
+
+    func clearTutorial() {
+        defaults().removeObject(forKey: keyTutorialActive)
     }
 
     func setDeviceForChild(_ forChild: Bool) {

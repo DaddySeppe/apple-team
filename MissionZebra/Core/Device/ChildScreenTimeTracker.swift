@@ -53,11 +53,10 @@ class ChildScreenTimeTracker: ObservableObject {
         #endif
     }
 
-    /// Get today's usage in minutes
-    /// Note: iOS Screen Time API works differently from Android UsageStats.
-    /// Full implementation requires DeviceActivityMonitor extension.
+    /// Get today's usage in minutes.
+    /// Whole-device totals require a DeviceActivityMonitor extension and entitlement;
+    /// this value is maintained by the app-level tracker as a safe fallback.
     func getTodayUsageMinutes() -> Int {
-        // Placeholder: In production, query DeviceActivityReport via extension.
         return todayUsageMinutes
     }
 

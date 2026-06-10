@@ -8,6 +8,7 @@ struct SecurityPage: View {
     let onToggleFamilyTime: () -> Void
     let onGoToPremiumDashboard: () -> Void
     let onLogout: () -> Void
+    let onDeleteAccount: () async throws -> Void
     let isDeviceForChild: Bool
     let onSetDeviceForChild: () -> Void
     let onSetDeviceForParent: () -> Void
@@ -17,6 +18,9 @@ struct SecurityPage: View {
     @AppStorage("notifyOnTaskDone") private var notifyOnTaskDone = true
     @AppStorage("notifyOnRewardRedeemed") private var notifyOnRewardRedeemed = true
     @AppStorage("isDarkTheme") private var isDarkTheme = false
+    @State private var showDeleteConfirmation = false
+    @State private var isDeletingAccount = false
+    @State private var accountDeleteError: String?
 
     private var userEmail: String {
         Auth.auth().currentUser?.email ?? "Onbekend"
@@ -33,8 +37,29 @@ struct SecurityPage: View {
                         .font(.subheadline)
                         .fontWeight(.medium)
                     Spacer().frame(height: 8)
-                    Text("Later kan je hier ook je wachtwoord of account beheren.")
-                        .font(.caption)
+
+                    if let accountDeleteError {
+                        Text(accountDeleteError)
+                            .font(.caption)
+                            .foregroundColor(.red)
+                    }
+
+                    Button(role: .destructive) {
+                        showDeleteConfirmation = true
+                    } label: {
+                        HStack {
+                            if isDeletingAccount {
+                                ProgressView()
+                            } else {
+                                Image(systemName: "trash")
+                            }
+                            Text(isDeletingAccount ? "Account verwijderen..." : "Account verwijderen")
+                        }
+                        .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.bordered)
+                    .tint(.red)
+                    .disabled(isDeletingAccount)
                 }
 
                 // PIN & Beveiliging
@@ -152,6 +177,34 @@ struct SecurityPage: View {
                 Spacer().frame(height: 16)
             }
             .padding(.horizontal, 16)
+        }
+        .confirmationDialog(
+            "Account permanent verwijderen?",
+            isPresented: $showDeleteConfirmation,
+            titleVisibility: .visible
+        ) {
+            Button("Verwijder account", role: .destructive) {
+                deleteAccount()
+            }
+            Button("Annuleren", role: .cancel) {}
+        } message: {
+            Text("Hiermee verwijder je je ouderaccount, kinderen, taken, beloningen en schermtijdgegevens permanent.")
+        }
+    }
+
+    private func deleteAccount() {
+        isDeletingAccount = true
+        accountDeleteError = nil
+
+        Task {
+            do {
+                try await onDeleteAccount()
+            } catch {
+                await MainActor.run {
+                    accountDeleteError = error.userFriendlyMessage("Account verwijderen is niet gelukt. Log opnieuw in en probeer het nog eens.")
+                    isDeletingAccount = false
+                }
+            }
         }
     }
 }

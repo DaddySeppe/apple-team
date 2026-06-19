@@ -5,6 +5,7 @@ struct ParentScreenTimeControlUiState {
     var children: [Child] = []
     var newChildName: String = ""
     var newChildMinutes: String = ""
+    var newChildBirthDate: Date = Calendar.current.date(byAdding: .year, value: -8, to: Date()) ?? Date()
     var editedLimits: [String: String] = [:]
     var isLoading: Bool = false
     var error: String? = nil
@@ -42,6 +43,11 @@ class ParentScreenTimeControlViewModel: ObservableObject {
         uiState.error = nil
     }
 
+    func onNewChildBirthDateChange(_ value: Date) {
+        uiState.newChildBirthDate = value
+        uiState.error = nil
+    }
+
     func addChild() {
         let name = uiState.newChildName.trimmingCharacters(in: .whitespaces)
         let minutesText = uiState.newChildMinutes.trimmingCharacters(in: .whitespaces)
@@ -63,13 +69,18 @@ class ParentScreenTimeControlViewModel: ObservableObject {
         uiState.isLoading = true
 
         Task {
-            let result = await childrenRepository.addChild(name: name, limitMinutes: minutes)
+            let result = await childrenRepository.addChild(
+                name: name,
+                limitMinutes: minutes,
+                birthDate: Self.dateKey(from: uiState.newChildBirthDate)
+            )
             await MainActor.run {
                 uiState.isLoading = false
                 switch result {
                 case .success:
                     uiState.newChildName = ""
                     uiState.newChildMinutes = ""
+                    uiState.newChildBirthDate = Calendar.current.date(byAdding: .year, value: -8, to: Date()) ?? Date()
                 case .failure(let error):
                     uiState.error = error.localizedDescription
                 }
@@ -117,5 +128,13 @@ class ParentScreenTimeControlViewModel: ObservableObject {
                 }
             }
         }
+    }
+
+    private static func dateKey(from date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.calendar = Calendar(identifier: .gregorian)
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.dateFormat = "yyyy-MM-dd"
+        return formatter.string(from: date)
     }
 }

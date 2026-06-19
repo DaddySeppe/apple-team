@@ -27,55 +27,53 @@ class ParentChildrenFirebaseRepository: ObservableObject {
             let children: [Child] = snapshot.documents.compactMap { doc in
                 let data = doc.data()
                 let name = data["name"] as? String ?? ""
-                let points = data["points"] as? Int ?? 0
+                let points = FirestoreDecoding.int(data["points"])
 
-                let storedUsedMinutes = (data["dailyScreenTimeUsedMinutes"] as? Int)
-                    ?? (data["screenTimeUsedMinutes"] as? Int)
-                    ?? 0
-                let deviceScreenTimes = Self.intMap(data["deviceScreenTimes"])
-                let deviceScreenTimeDates = data["deviceScreenTimeDates"] as? [String: String] ?? [:]
+                let storedUsedMinutes = data["dailyScreenTimeUsedMinutes"] != nil
+                    ? FirestoreDecoding.int(data["dailyScreenTimeUsedMinutes"])
+                    : FirestoreDecoding.int(data["screenTimeUsedMinutes"])
+                let deviceScreenTimes = FirestoreDecoding.intMap(data["deviceScreenTimes"])
+                let deviceScreenTimeDates = FirestoreDecoding.stringMap(data["deviceScreenTimeDates"])
                 let today = Self.todayKey()
-                let aggregateDeviceMinutes = deviceScreenTimes.reduce(0) { partial, entry in
-                    deviceScreenTimeDates[entry.key] == today ? partial + entry.value : partial
-                }
-                let usedMinutes = max(storedUsedMinutes, aggregateDeviceMinutes)
+                let usedMinutes = Child.aggregatedDailyScreenTime(
+                    storedUsedMinutes: storedUsedMinutes,
+                    deviceScreenTimes: deviceScreenTimes,
+                    deviceScreenTimeDates: deviceScreenTimeDates,
+                    todayKey: today
+                )
 
-                let limitMinutes = (data["dailyScreenTimeLimitMinutes"] as? Int)
-                    ?? (data["screenTimeLimitMinutes"] as? Int)
-                    ?? 60
+                let configuredLimitMinutes = data["dailyScreenTimeLimitMinutes"] != nil
+                    ? FirestoreDecoding.int(data["dailyScreenTimeLimitMinutes"], default: 60)
+                    : FirestoreDecoding.int(data["screenTimeLimitMinutes"], default: 60)
+                let screenTimeSchedule = ScreenTimeSchedule.fromFirestore(data["screenTimeSchedule"])
+                let limitMinutes = screenTimeSchedule.effectiveLimitMinutes(defaultLimitMinutes: configuredLimitMinutes)
 
-                let isBlocked = data["isBlocked"] as? Bool ?? false
-
-                let historyRaw = data["screenTimeHistory"] as? [String: Any] ?? [:]
-                var history: [String: Int] = [:]
-                for (key, value) in historyRaw {
-                    if let intVal = value as? Int {
-                        history[key] = intVal
-                    } else if let numVal = value as? NSNumber {
-                        history[key] = numVal.intValue
-                    }
-                }
+                let isBlocked = FirestoreDecoding.bool(data["isBlocked"])
+                let history = FirestoreDecoding.intMap(data["screenTimeHistory"])
+                let equippedItems = FirestoreDecoding.stringMap(data["equippedItems"])
 
                 return Child(
                     id: doc.documentID,
                     name: name,
+                    birthDate: data["birthDate"] as? String,
                     points: points,
                     dailyScreenTimeUsedMinutes: usedMinutes,
                     dailyScreenTimeLimitMinutes: limitMinutes,
                     isBlocked: isBlocked,
-                    purchasedAccessoryIds: (data["purchasedAccessoryIds"] as? [String]) ?? [],
+                    purchasedAccessoryIds: FirestoreDecoding.stringArray(data["purchasedAccessoryIds"]),
                     equippedAccessoryId: data["equippedAccessoryId"] as? String,
-                    equippedItems: FirestoreDecoding.stringMap(data["equippedItems"]).isEmpty
+                    equippedItems: equippedItems.isEmpty
                         ? Self.legacyEquippedItems(data["equippedAccessoryId"] as? String)
-                        : FirestoreDecoding.stringMap(data["equippedItems"]),
-                    streak: data["streak"] as? Int ?? 0,
+                        : equippedItems,
+                    streak: FirestoreDecoding.int(data["streak"]),
                     lastStreakCheckDate: data["lastStreakCheckDate"] as? String,
                     motivationalMessage: data["motivationalMessage"] as? String,
                     screenTimeHistory: history,
                     deviceScreenTimes: deviceScreenTimes,
-                    deviceNames: data["deviceNames"] as? [String: String] ?? [:],
+                    deviceNames: FirestoreDecoding.stringMap(data["deviceNames"]),
                     deviceScreenTimeDates: deviceScreenTimeDates,
-                    screenTimePermissionGranted: data["screenTimePermissionGranted"] as? Bool
+                    screenTimeSchedule: screenTimeSchedule,
+                    screenTimePermissionGranted: FirestoreDecoding.optionalBool(data["screenTimePermissionGranted"])
                 )
             }
 
@@ -131,17 +129,20 @@ class ParentChildrenFirebaseRepository: ObservableObject {
         }
     }
 
-    func addChild(name: String, limitMinutes: Int) async -> Result<Void, Error> {
+    func addChild(name: String, limitMinutes: Int, birthDate: String? = nil, isTutorial: Bool = false) async -> Result<Void, Error> {
         do {
             guard let user = auth.currentUser else {
                 throw NSError(domain: "", code: -1, userInfo: [NSLocalizedDescriptionKey: "Niet ingelogd"])
             }
             _ = try await childrenCollection(user.uid).addDocument(data: [
                 "name": name,
+                "birthDate": birthDate ?? NSNull(),
                 "points": 0,
                 "dailyScreenTimeUsedMinutes": 0,
                 "dailyScreenTimeLimitMinutes": limitMinutes,
                 "isBlocked": false,
+                "screenTimeSchedule": ScreenTimeSchedule().toFirestoreMap(),
+                "isTutorial": isTutorial,
                 "screenTimeHistory": [String: Int]()
             ])
             return .success(())
@@ -190,7 +191,7 @@ class ParentChildrenFirebaseRepository: ObservableObject {
                     errorPointer?.pointee = error as NSError
                     return nil
                 }
-                let currentPoints = snapshot.data()?["points"] as? Int ?? 0
+                let currentPoints = FirestoreDecoding.int(snapshot.data()?["points"])
                 transaction.updateData(["points": currentPoints + pointsToAdd], forDocument: childRef)
                 return nil
             }
@@ -209,15 +210,37 @@ class ParentChildrenFirebaseRepository: ObservableObject {
             let dateKey = Self.todayKey()
             let deviceSession = SessionManager.shared.getDeviceSession()
 
-            try await childRef.updateData([
-                "dailyScreenTimeUsedMinutes": minutes,
-                "screenTimeHistory.\(dateKey)": minutes,
-                "deviceScreenTimes.\(deviceSession.deviceId)": minutes,
-                "deviceNames.\(deviceSession.deviceId)": deviceSession.deviceName,
-                "deviceScreenTimeDates.\(deviceSession.deviceId)": dateKey,
-                "screenTimeSource": source,
-                "screenTimePermissionGranted": true
-            ])
+            try await firestore.runTransaction { transaction, errorPointer in
+                let snapshot: DocumentSnapshot
+                do {
+                    snapshot = try transaction.getDocument(childRef)
+                } catch let fetchError as NSError {
+                    errorPointer?.pointee = fetchError
+                    return nil
+                }
+
+                var existingDeviceTimes = FirestoreDecoding.intMap(snapshot.data()?["deviceScreenTimes"])
+                let existingDeviceDates = FirestoreDecoding.stringMap(snapshot.data()?["deviceScreenTimeDates"])
+                existingDeviceTimes[deviceSession.deviceId] = minutes
+
+                let totalMinutes = existingDeviceTimes.reduce(0) { total, entry in
+                    if entry.key == deviceSession.deviceId || existingDeviceDates[entry.key] == dateKey {
+                        return total + entry.value
+                    }
+                    return total
+                }
+
+                transaction.updateData([
+                    "dailyScreenTimeUsedMinutes": totalMinutes,
+                    "screenTimeHistory.\(dateKey)": totalMinutes,
+                    "deviceScreenTimes.\(deviceSession.deviceId)": minutes,
+                    "deviceNames.\(deviceSession.deviceId)": deviceSession.deviceName,
+                    "deviceScreenTimeDates.\(deviceSession.deviceId)": dateKey,
+                    "screenTimeSource": source,
+                    "screenTimePermissionGranted": true
+                ], forDocument: childRef)
+                return nil
+            }
             return .success(())
         } catch {
             return .failure(error)
@@ -270,23 +293,37 @@ class ParentChildrenFirebaseRepository: ObservableObject {
         }
     }
 
+    func updateScreenTimeSchedule(childId: String, schedule: ScreenTimeSchedule) async -> Result<Void, Error> {
+        do {
+            guard let user = auth.currentUser else {
+                throw NSError(domain: "", code: -1, userInfo: [NSLocalizedDescriptionKey: "Niet ingelogd"])
+            }
+            try await childrenCollection(user.uid).document(childId)
+                .updateData(["screenTimeSchedule": schedule.toFirestoreMap()])
+            return .success(())
+        } catch {
+            return .failure(error)
+        }
+    }
+
+    func updateChildBirthDate(childId: String, birthDate: String?) async -> Result<Void, Error> {
+        do {
+            guard let user = auth.currentUser else {
+                throw NSError(domain: "", code: -1, userInfo: [NSLocalizedDescriptionKey: "Niet ingelogd"])
+            }
+            let value: Any = birthDate ?? FieldValue.delete()
+            try await childrenCollection(user.uid).document(childId)
+                .updateData(["birthDate": value])
+            return .success(())
+        } catch {
+            return .failure(error)
+        }
+    }
+
     static func todayKey() -> String {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd"
         return formatter.string(from: Date())
-    }
-
-    private static func intMap(_ value: Any?) -> [String: Int] {
-        let raw = value as? [String: Any] ?? [:]
-        var result: [String: Int] = [:]
-        for (key, value) in raw {
-            if let intValue = value as? Int {
-                result[key] = intValue
-            } else if let numberValue = value as? NSNumber {
-                result[key] = numberValue.intValue
-            }
-        }
-        return result
     }
 
     private static func legacyEquippedItems(_ accessoryId: String?) -> [String: String] {

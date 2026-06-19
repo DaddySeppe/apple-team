@@ -7,7 +7,7 @@ struct ChildrenPage: View {
     let isAddingChild: Bool
     let addChildError: String?
     let onDeleteChild: (String) -> Void
-    let onAddChild: (String, Int) -> Void
+    let onAddChild: (String, Int, String?) -> Void
     let onClearAddChildError: () -> Void
     let onSendMessage: (String, String) -> Void
     let headerContent: AnyView
@@ -157,6 +157,12 @@ struct ChildCardView: View {
                         }
                         .font(.caption)
                     }
+                }
+
+                if let birthDate = child.birthDate {
+                    Text("\(child.age) jaar · geboren \(birthDate)")
+                        .font(.caption2)
+                        .foregroundColor(colors.onSurfaceVariant)
                 }
 
                 ProgressView(value: screenTimeProgress)

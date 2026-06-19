@@ -5,7 +5,7 @@ import SwiftUI
 struct ManageChildrenDialog: View {
     let children: [Child]
     let onDismiss: () -> Void
-    let onAddChild: (String, Int) -> Void
+    let onAddChild: (String, Int, String?) -> Void
     let onDeleteChild: (String) -> Void
     let isAdding: Bool
     let addChildError: String?
@@ -13,6 +13,7 @@ struct ManageChildrenDialog: View {
 
     @State private var newChildName = ""
     @State private var newChildLimit = "60"
+    @State private var newChildBirthDate = Calendar.current.date(byAdding: .year, value: -8, to: Date()) ?? Date()
 
     private let presets = ["30", "60", "90", "120"]
 
@@ -23,6 +24,9 @@ struct ManageChildrenDialog: View {
                 Section("Nieuw kind toevoegen") {
                     TextField("Naam", text: $newChildName)
                         .onChange(of: newChildName, perform: { _ in onClearError() })
+
+                    DatePicker("Geboortedatum", selection: $newChildBirthDate, displayedComponents: .date)
+                        .datePickerStyle(.compact)
 
                     Text("Dagelijkse limiet:")
                         .font(.caption)
@@ -56,7 +60,7 @@ struct ManageChildrenDialog: View {
                     Button(action: {
                         let limit = Int(newChildLimit) ?? 60
                         if !newChildName.trimmingCharacters(in: .whitespaces).isEmpty {
-                            onAddChild(newChildName, limit)
+                            onAddChild(newChildName, limit, Self.dateKey(from: newChildBirthDate))
                         }
                     }) {
                         if isAdding {
@@ -86,6 +90,14 @@ struct ManageChildrenDialog: View {
             }
         }
     }
+
+    private static func dateKey(from date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.calendar = Calendar(identifier: .gregorian)
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.dateFormat = "yyyy-MM-dd"
+        return formatter.string(from: date)
+    }
 }
 
 // MARK: - Manage Child Item
@@ -104,6 +116,11 @@ private struct ManageChildItem: View {
                 Text("\(child.dailyScreenTimeLimitMinutes) min/dag")
                     .font(.caption)
                     .foregroundColor(.secondary)
+                if let birthDate = child.birthDate {
+                    Text("Geboren: \(birthDate) · \(child.age) jaar")
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
+                }
             }
 
             Spacer()

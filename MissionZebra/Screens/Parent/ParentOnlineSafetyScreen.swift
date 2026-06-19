@@ -1,19 +1,35 @@
+import Combine
 import SwiftUI
+
+final class ParentOnlineSafetyViewModel: ObservableObject {
+    @Published private(set) var overview = SafetyOverview()
+
+    private let repository: SafetyRepository
+    private var cancellables = Set<AnyCancellable>()
+
+    init(repository: SafetyRepository = SafetyRepository()) {
+        self.repository = repository
+        repository.safetyOverviewFlow()
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] overview in
+                self?.overview = overview
+            }
+            .store(in: &cancellables)
+    }
+}
 
 struct ParentOnlineSafetyScreen: View {
     @EnvironmentObject var router: NavigationRouter
-
-    private let signals: [RiskSignal] = SafetyRepository().getRiskSignalsForChild()
+    @StateObject private var viewModel = ParentOnlineSafetyViewModel()
 
     var body: some View {
         VStack(spacing: 0) {
-            // Top bar
             HStack {
                 Button(action: { router.goBack() }) {
                     Image(systemName: "arrow.left")
                         .font(.title3)
                 }
-                Text("🛡 Online Veiligheid")
+                Text("Online Veiligheid")
                     .font(.title2)
                     .fontWeight(.bold)
                 Spacer()
@@ -21,13 +37,23 @@ struct ParentOnlineSafetyScreen: View {
             .padding()
 
             ScrollView {
-                VStack(spacing: 12) {
-                    if signals.isEmpty {
-                        Text("Geen risicomeldingen gevonden.")
+                VStack(alignment: .leading, spacing: 12) {
+                    SafetySummaryCard(overview: viewModel.overview)
+
+                    if viewModel.overview.children.isEmpty {
+                        Text("Voeg eerst een kind toe om veiligheidsinzichten te tonen.")
                             .foregroundColor(.secondary)
-                            .padding(24)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(16)
+                            .background(RoundedRectangle(cornerRadius: 12).fill(Color(.secondarySystemBackground)))
+                    } else if viewModel.overview.signals.isEmpty {
+                        Text("Geen risicomeldingen gevonden op basis van de beschikbare veiligheidsdata.")
+                            .foregroundColor(.secondary)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(16)
+                            .background(RoundedRectangle(cornerRadius: 12).fill(Color(.secondarySystemBackground)))
                     } else {
-                        ForEach(signals, id: \.title) { signal in
+                        ForEach(viewModel.overview.signals) { signal in
                             RiskSignalCard(signal: signal)
                         }
                     }
@@ -39,7 +65,35 @@ struct ParentOnlineSafetyScreen: View {
     }
 }
 
-// MARK: - Risk Signal Card
+private struct SafetySummaryCard: View {
+    let overview: SafetyOverview
+
+    private var latestText: String {
+        guard let latest = overview.latestTrackedAt, latest > 0 else {
+            return "Nog geen metingen"
+        }
+        let date = Date(timeIntervalSince1970: Double(latest) / 1000)
+        return date.formatted(date: .abbreviated, time: .shortened)
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Label("\(overview.children.count) kinderen", systemImage: "person.2.fill")
+                Spacer()
+                Label("\(overview.snapshots.count) metingen", systemImage: "chart.bar.doc.horizontal")
+            }
+            .font(.caption)
+            .foregroundColor(.secondary)
+
+            Text("Laatste sync: \(latestText)")
+                .font(.subheadline)
+                .foregroundColor(.secondary)
+        }
+        .padding(16)
+        .background(RoundedRectangle(cornerRadius: 12).fill(Color(.secondarySystemBackground)))
+    }
+}
 
 struct RiskSignalCard: View {
     let signal: RiskSignal
@@ -67,6 +121,20 @@ struct RiskSignalCard: View {
                 .foregroundColor(riskColor)
 
             VStack(alignment: .leading, spacing: 4) {
+                HStack(spacing: 6) {
+                    if !signal.childName.isEmpty {
+                        Text(signal.childName)
+                            .font(.caption)
+                            .fontWeight(.bold)
+                            .foregroundColor(.secondary)
+                    }
+                    if !signal.sourceDate.isEmpty {
+                        Text(signal.sourceDate)
+                            .font(.caption2)
+                            .foregroundColor(.secondary)
+                    }
+                }
+
                 Text(signal.title)
                     .font(.body)
                     .fontWeight(.semibold)

@@ -78,9 +78,9 @@ class ZebraShopRepository: ObservableObject {
                 }
 
                 let data = snapshot.data() ?? [:]
-                let currentPoints = data["points"] as? Int ?? 0
-                var currentInventory = data["purchasedAccessoryIds"] as? [String] ?? []
-                let currentEquipped = data["equippedItems"] as? [String: String] ?? [:]
+                let currentPoints = FirestoreDecoding.int(data["points"])
+                var currentInventory = FirestoreDecoding.stringArray(data["purchasedAccessoryIds"])
+                let currentEquipped = FirestoreDecoding.stringMap(data["equippedItems"])
 
                 switch ZebraCustomizerPolicy.remainingPointsAfterPurchase(
                     accessory: accessory,

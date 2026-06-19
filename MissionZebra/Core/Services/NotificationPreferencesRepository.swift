@@ -19,9 +19,9 @@ final class NotificationPreferencesRepository {
             let snapshot = try await firestore.collection("parents").document(user.uid).getDocument()
             let data = snapshot.data() ?? [:]
             return NotificationPreferences(
-                notifyOnTaskDone: data["notifyOnTaskDone"] as? Bool ?? true,
-                notifyOnRewardRedeemed: data["notifyOnRewardRedeemed"] as? Bool ?? true,
-                rewardsEnabled: data["rewardsEnabled"] as? Bool ?? false
+                notifyOnTaskDone: FirestoreDecoding.bool(data["notifyOnTaskDone"], default: true),
+                notifyOnRewardRedeemed: FirestoreDecoding.bool(data["notifyOnRewardRedeemed"], default: true),
+                rewardsEnabled: FirestoreDecoding.bool(data["rewardsEnabled"])
             )
         } catch {
             return NotificationPreferences()

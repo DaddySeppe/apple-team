@@ -31,10 +31,10 @@ class RewardFirebaseRepository: ObservableObject {
                 return Reward(
                     id: doc.documentID,
                     title: data["title"] as? String ?? "",
-                    costPoints: data["costPoints"] as? Int ?? 0,
+                    costPoints: FirestoreDecoding.int(data["costPoints"]),
                     childId: data["childId"] as? String,
-                    redeemed: data["redeemed"] as? Bool ?? false,
-                    requested: data["requested"] as? Bool ?? false
+                    redeemed: FirestoreDecoding.bool(data["redeemed"]),
+                    requested: FirestoreDecoding.bool(data["requested"])
                 )
             }
 
@@ -132,9 +132,10 @@ class RewardFirebaseRepository: ObservableObject {
                     return nil
                 }
 
-                let cost = rewardSnap.data()?["costPoints"] as? Int ?? 0
-                let childId = rewardSnap.data()?["childId"] as? String
-                let redeemed = rewardSnap.data()?["redeemed"] as? Bool ?? false
+                let rewardData = rewardSnap.data() ?? [:]
+                let cost = FirestoreDecoding.int(rewardData["costPoints"])
+                let childId = rewardData["childId"] as? String
+                let redeemed = FirestoreDecoding.bool(rewardData["redeemed"])
 
                 guard let childId = childId else {
                     let error = NSError(domain: "", code: -1, userInfo: [NSLocalizedDescriptionKey: "Geen kind gekoppeld aan beloning"])
@@ -158,7 +159,7 @@ class RewardFirebaseRepository: ObservableObject {
                     return nil
                 }
 
-                let currentPoints = childSnap.data()?["points"] as? Int ?? 0
+                let currentPoints = FirestoreDecoding.int(childSnap.data()?["points"])
 
                 if currentPoints < cost {
                     let error = NSError(domain: "", code: -1, userInfo: [NSLocalizedDescriptionKey: "Niet genoeg punten"])

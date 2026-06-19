@@ -368,7 +368,7 @@ struct ParentLoginScreen: View {
 
         firestore.collection("parents").document(user.uid).getDocument { snapshot, err in
             if let data = snapshot?.data(),
-               data["pinHash"] != nil || data["parentPinConfigured"] as? Bool == true {
+               data["pinHash"] != nil || FirestoreDecoding.bool(data["parentPinConfigured"]) {
                 fetchPinAndContinue()
             } else {
                 showPinSetup = true

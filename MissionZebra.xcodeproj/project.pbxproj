@@ -51,6 +51,7 @@
 		7164E3D82EFA7F4448B252CE /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1C9B6769DED19CF3DDE20044 /* Theme.swift */; };
 		72AF5B98B3AB9F48F04EC745 /* Tooltips.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1ED32F51509F63693F011D9 /* Tooltips.swift */; };
 		73A01908BDDFD7AF65E7FD20 /* ChildScreenTimeStatusTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FD54D81C83A42C4C2466951E /* ChildScreenTimeStatusTests.swift */; };
+		75BAFF6F3B87CAE0718C7AF0 /* SafetyRepositoryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 693B3BDAD8F0E1575A88332F /* SafetyRepositoryTests.swift */; };
 		76E1EC78A0F2DEF14E07FC5E /* ZebraShopRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = 703AF6EDBDAA80544942870D /* ZebraShopRepository.swift */; };
 		77EE4BE3A6434F5F525DA299 /* KeychainStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0BFF5A1800D666506D4EBFED /* KeychainStore.swift */; };
 		78BF49C8782516BD9319BE1E /* ChildDashboardScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 204C4890B6F86C3CBF16AF6E /* ChildDashboardScreen.swift */; };
@@ -73,6 +74,7 @@
 		A98EB5828AE1BE3263A31FAF /* TaskCalendarViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4557D3EF8E2717D0A5837F2 /* TaskCalendarViewModel.swift */; };
 		AD9CB82F9AE2B65D3F294DD2 /* SoundManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14343449689BCABE67A0040F /* SoundManager.swift */; };
 		B12B4046502BD0EDAFD2DB46 /* NotificationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = CD7FB4F67E97D7724E5FC8FA /* NotificationManager.swift */; };
+		B4767142FC6BBD5D45FAA9C0 /* ChildFirestoreParityTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 723F8D1142C09AADBA88E31A /* ChildFirestoreParityTests.swift */; };
 		B71E7189BE00CF4007EE7C69 /* NotificationPreferencesRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0256441E55543E3595B229C0 /* NotificationPreferencesRepository.swift */; };
 		B7CB6F9A5C38CCCF483F8FA4 /* TabComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1A96A062B0DC7507E9C09A2 /* TabComponents.swift */; };
 		B85B9DA85FD9F20D967B3609 /* FirestoreDecoding.swift in Sources */ = {isa = PBXBuildFile; fileRef = 009B68A997D32FE08ACAE297 /* FirestoreDecoding.swift */; };
@@ -186,10 +188,12 @@
 		5E3DC5F156921273F2B04812 /* PremiumRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PremiumRepository.swift; sourceTree = "<group>"; };
 		5E4547FD1B58F6B561B202FB /* Typography.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Typography.swift; sourceTree = "<group>"; };
 		6540E8B352E1EE80944522B6 /* Accessory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Accessory.swift; sourceTree = "<group>"; };
+		693B3BDAD8F0E1575A88332F /* SafetyRepositoryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SafetyRepositoryTests.swift; sourceTree = "<group>"; };
 		6E5AC091DC9B410FC049B10E /* Child.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Child.swift; sourceTree = "<group>"; };
 		6F9EBDD45A244BDB32C1124B /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		703AF6EDBDAA80544942870D /* ZebraShopRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ZebraShopRepository.swift; sourceTree = "<group>"; };
 		711EF956267E1A2FB115D78A /* TasksTab.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TasksTab.swift; sourceTree = "<group>"; };
+		723F8D1142C09AADBA88E31A /* ChildFirestoreParityTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChildFirestoreParityTests.swift; sourceTree = "<group>"; };
 		72EA66FCC872E802630A50D8 /* LanguagePreferences.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LanguagePreferences.swift; sourceTree = "<group>"; };
 		7375C0E89188BC58FA46A479 /* TaskOrderingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaskOrderingTests.swift; sourceTree = "<group>"; };
 		76FC5EE2BD681717B8CFBA88 /* MissionZebraTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = MissionZebraTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -431,12 +435,14 @@
 		9EFEAB9C449E8DA049507BD9 /* MissionZebraTests */ = {
 			isa = PBXGroup;
 			children = (
+				723F8D1142C09AADBA88E31A /* ChildFirestoreParityTests.swift */,
 				FD54D81C83A42C4C2466951E /* ChildScreenTimeStatusTests.swift */,
 				46DC9CC7668A35F9B72B5B81 /* NavigationRouterTests.swift */,
 				29A6FB272B32C66A9672B9E6 /* PinSecurityTests.swift */,
 				F7035D7994D03A6284435C95 /* PremiumFeatureGateTests.swift */,
 				0456A194B305FE65A43B5403 /* RewardRedemptionPolicyTests.swift */,
 				C6DD1D615F4EC7B2302E6236 /* RouteGuardPolicyTests.swift */,
+				693B3BDAD8F0E1575A88332F /* SafetyRepositoryTests.swift */,
 				003B0654DBD108AC94B3EF9F /* TaskCalendarSyncManagerTests.swift */,
 				7375C0E89188BC58FA46A479 /* TaskOrderingTests.swift */,
 				B82F0AEFAB5AD9ACC89CA3C2 /* ZebraCustomizerPolicyTests.swift */,
@@ -813,12 +819,14 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				B4767142FC6BBD5D45FAA9C0 /* ChildFirestoreParityTests.swift in Sources */,
 				73A01908BDDFD7AF65E7FD20 /* ChildScreenTimeStatusTests.swift in Sources */,
 				F41AC1BD2F239DF1A3BF87E6 /* NavigationRouterTests.swift in Sources */,
 				DFCA3BB957118C776DCD1B05 /* PinSecurityTests.swift in Sources */,
 				681ABB2B1CA144A25CEF3580 /* PremiumFeatureGateTests.swift in Sources */,
 				4DDDCB1FD863676B6ED15069 /* RewardRedemptionPolicyTests.swift in Sources */,
 				DE0956B7EF3396BE576E2AC2 /* RouteGuardPolicyTests.swift in Sources */,
+				75BAFF6F3B87CAE0718C7AF0 /* SafetyRepositoryTests.swift in Sources */,
 				429ED47B4B23C2D544E5DAA7 /* TaskCalendarSyncManagerTests.swift in Sources */,
 				EBE7F476EC2BE1E8109446F0 /* TaskOrderingTests.swift in Sources */,
 				D796B9F8DF038B3586ED6971 /* ZebraCustomizerPolicyTests.swift in Sources */,

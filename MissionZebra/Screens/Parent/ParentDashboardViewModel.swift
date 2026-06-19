@@ -425,12 +425,12 @@ class ParentDashboardViewModel: ObservableObject {
         }
     }
 
-    func addChild(name: String, limitMinutes: Int) {
+    func addChild(name: String, limitMinutes: Int, birthDate: String? = nil) {
         uiState.isAddingChild = true
         uiState.addChildError = nil
 
         Task {
-            let result = await childrenRepository.addChild(name: name, limitMinutes: limitMinutes)
+            let result = await childrenRepository.addChild(name: name, limitMinutes: limitMinutes, birthDate: birthDate)
             await MainActor.run {
                 uiState.isAddingChild = false
                 if case .failure(let error) = result {

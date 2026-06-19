@@ -28,6 +28,10 @@ struct ParentScreenTimeControlScreen: View {
                     AddChildSection(
                         name: $viewModel.uiState.newChildName,
                         minutes: $viewModel.uiState.newChildMinutes,
+                        birthDate: Binding(
+                            get: { viewModel.uiState.newChildBirthDate },
+                            set: { viewModel.onNewChildBirthDateChange($0) }
+                        ),
                         onAdd: { viewModel.addChild() }
                     )
 
@@ -87,6 +91,7 @@ struct ParentScreenTimeControlScreen: View {
 struct AddChildSection: View {
     @Binding var name: String
     @Binding var minutes: String
+    @Binding var birthDate: Date
     let onAdd: () -> Void
 
     var body: some View {
@@ -97,6 +102,9 @@ struct AddChildSection: View {
 
             TextField("Naam van het kind", text: $name)
                 .textFieldStyle(.roundedBorder)
+
+            DatePicker("Geboortedatum", selection: $birthDate, displayedComponents: .date)
+                .datePickerStyle(.compact)
 
             TextField("Dagelijkse schermtijd (minuten)", text: $minutes)
                 .textFieldStyle(.roundedBorder)
@@ -153,6 +161,11 @@ struct ChildRow: View {
                 Text("Limiet: \(child.dailyScreenTimeLimitMinutes) min/dag · Gebruikt: \(child.dailyScreenTimeUsedMinutes) min")
                     .font(.caption)
                     .foregroundColor(.secondary)
+                if let birthDate = child.birthDate {
+                    Text("Geboren: \(birthDate) · \(child.age) jaar")
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
+                }
             }
 
             Spacer()

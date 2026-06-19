@@ -30,12 +30,12 @@ class TaskFirebaseRepository: ObservableObject {
                 return MZTask(
                     id: doc.documentID,
                     title: data["title"] as? String ?? "",
-                    points: Self.intValue(data["points"]),
+                    points: FirestoreDecoding.int(data["points"]),
                     childId: data["childId"] as? String,
                     childName: data["childName"] as? String,
                     parentId: data["parentId"] as? String,
-                    pendingApproval: data["pendingApproval"] as? Bool ?? false,
-                    completed: data["completed"] as? Bool ?? false,
+                    pendingApproval: FirestoreDecoding.bool(data["pendingApproval"]),
+                    completed: FirestoreDecoding.bool(data["completed"]),
                     dueDate: data["dueDate"] as? String,
                     recurrence: data["recurrence"] as? String,
                     purpose: data["purpose"] as? String ?? "",
@@ -43,8 +43,8 @@ class TaskFirebaseRepository: ObservableObject {
                     childReflection: data["childReflection"] as? String ?? "",
                     effortLevel: data["effortLevel"] as? String ?? "",
                     parentFeedback: data["parentFeedback"] as? String ?? "",
-                    createdAt: Self.int64Value(data["createdAt"]),
-                    updatedAt: Self.int64Value(data["updatedAt"])
+                    createdAt: FirestoreDecoding.int64(data["createdAt"]),
+                    updatedAt: FirestoreDecoding.int64(data["updatedAt"])
                 )
             }
 
@@ -161,7 +161,7 @@ class TaskFirebaseRepository: ObservableObject {
             let taskRef = collection.document(taskId)
             let snapshot = try await taskRef.getDocument()
             let data = snapshot.data() ?? [:]
-            let points = Self.intValue(data["points"])
+            let points = FirestoreDecoding.int(data["points"])
             let childId = data["childId"] as? String
             let recurrence = data["recurrence"] as? String
             let dueDate = data["dueDate"] as? String
@@ -257,17 +257,4 @@ class TaskFirebaseRepository: ObservableObject {
         Int64(Date().timeIntervalSince1970 * 1000)
     }
 
-    private static func intValue(_ value: Any?) -> Int {
-        if let value = value as? Int { return value }
-        if let value = value as? Int64 { return Int(value) }
-        if let value = value as? NSNumber { return value.intValue }
-        return 0
-    }
-
-    private static func int64Value(_ value: Any?) -> Int64 {
-        if let value = value as? Int64 { return value }
-        if let value = value as? Int { return Int64(value) }
-        if let value = value as? NSNumber { return value.int64Value }
-        return 0
-    }
 }

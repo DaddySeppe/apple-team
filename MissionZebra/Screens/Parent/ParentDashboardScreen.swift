@@ -68,7 +68,7 @@ struct ParentDashboardScreen: View {
                 isAddingChild: viewModel.uiState.isAddingChild,
                 addChildError: viewModel.uiState.addChildError,
                 onDeleteChild: { viewModel.deleteChild(childId: $0) },
-                onAddChild: { name, limit in viewModel.addChild(name: name, limitMinutes: limit) },
+                onAddChild: { name, limit, birthDate in viewModel.addChild(name: name, limitMinutes: limit, birthDate: birthDate) },
                 onClearAddChildError: { viewModel.clearAddChildError() },
                 onSendMessage: { childId, msg in viewModel.sendMotivationalMessage(childId: childId, message: msg) },
                 headerContent: header

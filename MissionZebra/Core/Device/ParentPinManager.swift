@@ -93,8 +93,9 @@ class ParentPinManager {
 
         do {
             let snapshot = try await firestore.collection("parents").document(uid).getDocument()
-            let configured = snapshot.data()?["parentPinConfigured"] as? Bool == true ||
-                !((snapshot.data()?["pinHash"] as? String) ?? "").isEmpty
+            let data = snapshot.data() ?? [:]
+            let configured = FirestoreDecoding.bool(data["parentPinConfigured"]) ||
+                !((data["pinHash"] as? String) ?? "").isEmpty
             if configured {
                 getDefaults().set(true, forKey: configuredKeyForUser(uid))
             }

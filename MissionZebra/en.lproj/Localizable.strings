@@ -1,0 +1,17 @@
+"common.back" = "Back";
+"common.cancel" = "Cancel";
+"common.save" = "Save";
+"common.ok" = "OK";
+"common.syncNow" = "Sync now";
+"premium.title" = "Premium";
+"premium.purchase" = "Start premium";
+"premium.restore" = "Restore purchases";
+"calendar.sync.title" = "Calendar sync";
+"calendar.permissionDenied" = "No calendar access.";
+"safety.title" = "Online safety";
+"safety.iosLimitations" = "iOS provides total Screen Time through DeviceActivity, but not freely readable per-app open counts like Android.";
+"screenTime.real.title" = "Real iOS Screen Time";
+"screenTime.permissionMissing" = "Screen Time access is missing.";
+"tasks.title" = "Tasks";
+"child.dashboard.title" = "Child dashboard";
+"errors.notLoggedIn" = "Not logged in";

@@ -32,12 +32,18 @@ class DeviceUsageRepository: ObservableObject {
         }
     }
 
-    private let defaults = UserDefaults(suiteName: "missionzebra_device_usage") ?? .standard
+    private let defaults: UserDefaults
+    private let deviceActivityCoordinator: DeviceActivityCoordinator
     private let activeStartKey = "active_start_millis"
     private let dailyUsagePrefix = "daily_usage_minutes_"
-    private let deviceActivityUsagePrefix = "device_activity_minutes_"
 
-    init() {
+    init(
+        defaults: UserDefaults = MissionZebraAppGroup.defaults,
+        deviceActivityCoordinator: DeviceActivityCoordinator = .shared
+    ) {
+        self.defaults = defaults
+        self.deviceActivityCoordinator = deviceActivityCoordinator
+
         NotificationCenter.default.addObserver(
             forName: UIApplication.didBecomeActiveNotification,
             object: nil,
@@ -63,7 +69,10 @@ class DeviceUsageRepository: ObservableObject {
 
     var usageSource: UsageSource {
         #if canImport(FamilyControls)
-        return hasUsagePermission() ? .deviceActivity : .appForegroundFallback
+        if deviceActivityCoordinator.hasDeviceActivityDataToday() {
+            return .deviceActivity
+        }
+        return hasUsagePermission() ? .appForegroundFallback : .appForegroundFallback
         #else
         return .unavailable
         #endif
@@ -79,8 +88,8 @@ class DeviceUsageRepository: ObservableObject {
     func getTodayUsageSnapshot() async -> UsageSnapshot {
         flushActiveSession()
         let today = Date()
-        let deviceActivityMinutes = defaults.integer(forKey: deviceActivityUsageKey(for: today))
-        if hasUsagePermission(), deviceActivityMinutes > 0 {
+        let deviceActivityMinutes = deviceActivityCoordinator.currentDeviceActivityMinutes(date: today)
+        if hasUsagePermission(), deviceActivityCoordinator.hasDeviceActivityDataToday(date: today) {
             return UsageSnapshot(minutes: deviceActivityMinutes, source: .deviceActivity)
         }
 
@@ -116,11 +125,14 @@ class DeviceUsageRepository: ObservableObject {
         return dailyUsagePrefix + formatter.string(from: date)
     }
 
-    private func deviceActivityUsageKey(for date: Date) -> String {
-        let formatter = DateFormatter()
-        formatter.calendar = Calendar(identifier: .gregorian)
-        formatter.locale = Locale(identifier: "en_US_POSIX")
-        formatter.dateFormat = "yyyy-MM-dd"
-        return deviceActivityUsagePrefix + formatter.string(from: date)
+    func startDeviceActivityMonitoringIfPossible() async -> DeviceActivityAvailability {
+        let availability = deviceActivityCoordinator.availability()
+        guard availability == .available else { return availability }
+        do {
+            try deviceActivityCoordinator.startDailyMonitoring()
+            return .available
+        } catch {
+            return .unavailable(error.localizedDescription)
+        }
     }
 }

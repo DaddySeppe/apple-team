@@ -1,4 +1,7 @@
 import SwiftUI
+#if canImport(FamilyControls)
+import FamilyControls
+#endif
 
 struct ParentScreenTimeControlScreen: View {
     @EnvironmentObject var router: NavigationRouter
@@ -7,6 +10,12 @@ struct ParentScreenTimeControlScreen: View {
     @State private var showEditDialog = false
     @State private var editingChild: Child?
     @State private var editMinutes: String = ""
+    @State private var screenTimePickerError: String?
+
+    #if canImport(FamilyControls)
+    @State private var showFamilyActivityPicker = false
+    @State private var familySelection = DeviceActivityCoordinator.shared.loadSelection() ?? FamilyActivitySelection()
+    #endif
 
     var body: some View {
         VStack(spacing: 0) {
@@ -25,6 +34,20 @@ struct ParentScreenTimeControlScreen: View {
 
             ScrollView {
                 VStack(spacing: 16) {
+                    ScreenTimeSetupCard(
+                        error: screenTimePickerError,
+                        onAuthorize: {
+                            Task { await requestScreenTimeAuthorization() }
+                        },
+                        onPickApps: {
+                            #if canImport(FamilyControls)
+                            showFamilyActivityPicker = true
+                            #else
+                            screenTimePickerError = "FamilyControls is niet beschikbaar op dit platform."
+                            #endif
+                        }
+                    )
+
                     AddChildSection(
                         name: $viewModel.uiState.newChildName,
                         minutes: $viewModel.uiState.newChildMinutes,
@@ -83,6 +106,79 @@ struct ParentScreenTimeControlScreen: View {
                 Text("Pas de dagelijkse limiet aan voor \(child.name)")
             }
         }
+        #if canImport(FamilyControls)
+        .familyActivityPicker(isPresented: $showFamilyActivityPicker, selection: $familySelection)
+        .onChange(of: showFamilyActivityPicker) { isPresented in
+            if !isPresented {
+                do {
+                    try DeviceActivityCoordinator.shared.saveSelection(familySelection)
+                    try DeviceActivityCoordinator.shared.startDailyMonitoring()
+                    screenTimePickerError = nil
+                } catch {
+                    screenTimePickerError = error.localizedDescription
+                }
+            }
+        }
+        #endif
+    }
+
+    private func requestScreenTimeAuthorization() async {
+        #if canImport(FamilyControls)
+        do {
+            try await AuthorizationCenter.shared.requestAuthorization(for: .individual)
+            try DeviceActivityCoordinator.shared.startDailyMonitoring()
+            await MainActor.run { screenTimePickerError = nil }
+        } catch {
+            await MainActor.run { screenTimePickerError = error.localizedDescription }
+        }
+        #else
+        await MainActor.run {
+            screenTimePickerError = "FamilyControls is niet beschikbaar op dit platform."
+        }
+        #endif
+    }
+}
+
+private struct ScreenTimeSetupCard: View {
+    let error: String?
+    let onAuthorize: () -> Void
+    let onPickApps: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Label("Echte iOS Screen Time", systemImage: "shield.lefthalf.filled")
+                    .font(.headline)
+                Spacer()
+                Text("Apple Screen Time")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+
+            Text("Kies apps of categorieën die MissionZebra mag meten en blokkeren. Zonder Apple-toestemming toont iOS alleen een veilige fallback, geen volledige toestel-schermtijd.")
+                .font(.subheadline)
+                .foregroundColor(.secondary)
+
+            if let error {
+                Text(error)
+                    .font(.caption)
+                    .foregroundColor(.red)
+            }
+
+            HStack {
+                Button(action: onAuthorize) {
+                    Label("Geef toestemming", systemImage: "checkmark.shield")
+                }
+                .buttonStyle(.bordered)
+
+                Button(action: onPickApps) {
+                    Label("Kies apps", systemImage: "square.grid.2x2")
+                }
+                .buttonStyle(.borderedProminent)
+            }
+        }
+        .padding(16)
+        .background(RoundedRectangle(cornerRadius: 12).fill(Color(.secondarySystemBackground)))
     }
 }
 

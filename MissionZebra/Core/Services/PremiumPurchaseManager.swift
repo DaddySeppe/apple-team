@@ -49,8 +49,9 @@ final class PremiumPurchaseManager: ObservableObject {
             let result = try await product.purchase()
             switch result {
             case .success(let verification):
+                let signedTransactionInfo = verification.jwsRepresentation
                 let transaction = try checkVerified(verification)
-                await activatePremium(from: transaction, source: "iosStoreKitPurchase")
+                await verifyPremium(from: transaction, signedTransactionInfo: signedTransactionInfo, source: "iosStoreKitPurchase")
                 await transaction.finish()
             case .userCancelled, .pending:
                 break
@@ -70,9 +71,10 @@ final class PremiumPurchaseManager: ObservableObject {
             try await AppStore.sync()
             var restored = false
             for await verification in Transaction.currentEntitlements {
+                let signedTransactionInfo = verification.jwsRepresentation
                 let transaction = try checkVerified(verification)
                 guard transaction.productID == Self.premiumMonthlyProductId else { continue }
-                await activatePremium(from: transaction, source: "iosStoreKitRestore")
+                await verifyPremium(from: transaction, signedTransactionInfo: signedTransactionInfo, source: "iosStoreKitRestore")
                 restored = true
             }
             if !restored {
@@ -91,7 +93,7 @@ final class PremiumPurchaseManager: ObservableObject {
                 do {
                     let transaction = try self.checkVerified(verification)
                     guard transaction.productID == Self.premiumMonthlyProductId else { continue }
-                    await self.activatePremium(from: transaction, source: "iosStoreKitUpdate")
+                    await self.verifyPremium(from: transaction, signedTransactionInfo: verification.jwsRepresentation, source: "iosStoreKitUpdate")
                     await transaction.finish()
                 } catch {
                     self.errorMessage = error.localizedDescription
@@ -113,11 +115,12 @@ final class PremiumPurchaseManager: ObservableObject {
         }
     }
 
-    private func activatePremium(from transaction: Transaction, source: String) async {
-        let premiumUntil = transaction.expirationDate.map { Int64($0.timeIntervalSince1970 * 1000) }
-        let result = await premiumRepository.activatePremiumFromStoreKit(
+    private func verifyPremium(from transaction: Transaction, signedTransactionInfo: String, source: String) async {
+        let result = await premiumRepository.verifyApplePremiumPurchase(
+            transactionId: String(transaction.id),
             originalTransactionId: String(transaction.originalID),
-            premiumUntil: premiumUntil,
+            productId: transaction.productID,
+            signedTransactionInfo: signedTransactionInfo,
             source: source
         )
         switch result {

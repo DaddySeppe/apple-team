@@ -6,6 +6,7 @@ class TaskCalendarViewModel: ObservableObject {
     private let premiumRepository: PremiumRepository
     private let calendarSyncManager: TaskCalendarSyncManager
     private var cancellables = Set<AnyCancellable>()
+    private var autoSyncWorkItem: DispatchWorkItem?
 
     /// selected date by user (nil means no date selected)
     @Published var selectedDate: Date? = nil
@@ -42,6 +43,7 @@ class TaskCalendarViewModel: ObservableObject {
             .receive(on: DispatchQueue.main)
             .sink { [weak self] tasks in
                 self?.tasks = tasks
+                self?.scheduleAutoSync(reason: "tasksChanged")
             }
             .store(in: &cancellables)
 
@@ -51,6 +53,7 @@ class TaskCalendarViewModel: ObservableObject {
                 self?.premiumStatus = status
                 if status.isPremium {
                     self?.refreshCalendars()
+                    self?.scheduleAutoSync(reason: "premiumEnabled")
                 }
             }
             .store(in: &cancellables)
@@ -155,6 +158,7 @@ class TaskCalendarViewModel: ObservableObject {
         isCalendarConnected = true
         calendarMessage = "Agenda gekoppeld."
         calendarError = nil
+        scheduleAutoSync(reason: "calendarConnected", delay: 0.1)
     }
 
     func disconnectCalendar() {
@@ -186,6 +190,40 @@ class TaskCalendarViewModel: ObservableObject {
                 await MainActor.run {
                     isSyncingCalendar = false
                     calendarError = error.localizedDescription
+                    connectedCalendarId = calendarSyncManager.connectedCalendarId
+                    isCalendarConnected = calendarSyncManager.isConnected
+                }
+            }
+        }
+    }
+
+    private func scheduleAutoSync(reason: String, delay: TimeInterval = 1.0) {
+        guard premiumStatus.isPremium, calendarSyncManager.isConnected, !tasks.isEmpty else { return }
+
+        autoSyncWorkItem?.cancel()
+        let workItem = DispatchWorkItem { [weak self] in
+            self?.runAutoSync(reason: reason)
+        }
+        autoSyncWorkItem = workItem
+        DispatchQueue.main.asyncAfter(deadline: .now() + delay, execute: workItem)
+    }
+
+    private func runAutoSync(reason: String) {
+        guard premiumStatus.isPremium, calendarSyncManager.isConnected else { return }
+        Task {
+            do {
+                let count = try await calendarSyncManager.sync(tasks: tasks)
+                await MainActor.run {
+                    calendarMessage = "Kalender automatisch bijgewerkt (\(count) taakmomenten)."
+                    calendarError = nil
+                    connectedCalendarId = calendarSyncManager.connectedCalendarId
+                    isCalendarConnected = calendarSyncManager.isConnected
+                }
+            } catch {
+                await MainActor.run {
+                    calendarError = error.localizedDescription
+                    connectedCalendarId = calendarSyncManager.connectedCalendarId
+                    isCalendarConnected = calendarSyncManager.isConnected
                 }
             }
         }

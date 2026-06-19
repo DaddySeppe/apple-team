@@ -1,0 +1,17 @@
+"common.back" = "Terug";
+"common.cancel" = "Annuleren";
+"common.save" = "Opslaan";
+"common.ok" = "Ok";
+"common.syncNow" = "Sync nu";
+"premium.title" = "Premium";
+"premium.purchase" = "Start premium";
+"premium.restore" = "Aankopen herstellen";
+"calendar.sync.title" = "Kalender-sync";
+"calendar.permissionDenied" = "Geen toegang tot agenda.";
+"safety.title" = "Online veiligheid";
+"safety.iosLimitations" = "iOS geeft totale Screen Time via DeviceActivity, maar geen vrij uitleesbare per-app open-counts zoals Android.";
+"screenTime.real.title" = "Echte iOS Screen Time";
+"screenTime.permissionMissing" = "Screen Time-toegang ontbreekt.";
+"tasks.title" = "Taken";
+"child.dashboard.title" = "Kind dashboard";
+"errors.notLoggedIn" = "Niet ingelogd";

@@ -10,6 +10,9 @@ struct PremiumChildData: Identifiable {
     let limit: Int
     let points: Int
     let trend: [Int] // 7 values: Ma..Zo
+    let deviceUsage: [(name: String, minutes: Int)]
+    let scheduleSummary: String
+    let insight: String
 }
 
 struct ParentPremiumDashboardUiState {
@@ -70,7 +73,10 @@ class ParentPremiumDashboardViewModel: ObservableObject {
                 used: child.dailyScreenTimeUsedMinutes,
                 limit: child.dailyScreenTimeLimitMinutes,
                 points: child.points,
-                trend: weekTrend
+                trend: weekTrend,
+                deviceUsage: deviceUsage(for: child),
+                scheduleSummary: scheduleSummary(for: child),
+                insight: insight(for: child, weekTrend: weekTrend)
             )
         }
 
@@ -119,6 +125,39 @@ class ParentPremiumDashboardViewModel: ObservableObject {
         }
         return result
     }
+
+    private func deviceUsage(for child: Child) -> [(name: String, minutes: Int)] {
+        child.deviceScreenTimes
+            .map { deviceId, minutes in
+                (name: child.deviceNames[deviceId] ?? deviceId, minutes: minutes)
+            }
+            .sorted { $0.minutes > $1.minutes }
+    }
+
+    private func scheduleSummary(for child: Child) -> String {
+        let schedule = child.screenTimeSchedule
+        guard schedule.enabled else {
+            return "Vaste limiet: \(child.dailyScreenTimeLimitMinutes) min/dag"
+        }
+        let vacation = schedule.vacationModeEnabled ? " · vakantie \(schedule.vacationLimitMinutes)m" : ""
+        let bedtime = schedule.bedtimeBlockEnabled ? " · bedtijd \(schedule.bedtimeStartHour):00-\(schedule.bedtimeEndHour):00" : ""
+        let focus = schedule.focusBlockEnabled ? " · focus \(schedule.focusStartHour):00-\(schedule.focusEndHour):00" : ""
+        return "School \(schedule.schoolDayLimitMinutes)m · weekend \(schedule.weekendLimitMinutes)m\(vacation)\(bedtime)\(focus)"
+    }
+
+    private func insight(for child: Child, weekTrend: [Int]) -> String {
+        let overLimitDays = weekTrend.filter { child.dailyScreenTimeLimitMinutes > 0 && $0 > child.dailyScreenTimeLimitMinutes }.count
+        if overLimitDays >= 3 {
+            return "Vaak over limiet deze week. Overweeg een striktere schooldagpreset of bedtime block."
+        }
+        if child.deviceScreenTimes.count > 1 {
+            return "Gebruik komt van meerdere toestellen. Controleer gedeelde toestellen en per-device rapportage."
+        }
+        if child.screenTimePermissionGranted == false {
+            return "Screen Time-toegang ontbreekt op minstens een toestel."
+        }
+        return "Gebruik is stabiel. Kalender- en safety-checks kunnen helpen om routines te bewaken."
+    }
 }
 
 // MARK: - Screen
@@ -153,6 +192,9 @@ struct ParentPremiumDashboardScreen: View {
                 notifications: viewModel.uiState.notifications,
                 avgDailyScreenTime: viewModel.uiState.avgDailyScreenTime,
                 avgWeekTrend: viewModel.uiState.avgWeekTrend,
+                onScreenTime: { router.navigate(to: .parentScreenTimeControl) },
+                onCalendar: { router.navigate(to: .taskCalendar) },
+                onSafety: { router.navigate(to: .parentOnlineSafety) },
                 onBack: { router.goBack() }
             )
         }
@@ -298,6 +340,9 @@ struct PremiumDashboardContent: View {
     let notifications: [String]
     let avgDailyScreenTime: Int
     let avgWeekTrend: [Int]
+    let onScreenTime: () -> Void
+    let onCalendar: () -> Void
+    let onSafety: () -> Void
     let onBack: () -> Void
 
     var body: some View {
@@ -307,6 +352,12 @@ struct PremiumDashboardContent: View {
                     .font(.largeTitle)
                     .fontWeight(.bold)
                     .foregroundColor(.accentColor)
+
+                PremiumQuickActions(
+                    onScreenTime: onScreenTime,
+                    onCalendar: onCalendar,
+                    onSafety: onSafety
+                )
 
                 if !notifications.isEmpty {
                     VStack(alignment: .leading, spacing: 4) {
@@ -370,9 +421,61 @@ struct PremiumChildCard: View {
 
             WeekBarChart(values: child.trend)
                 .frame(height: 150)
+
+            VStack(alignment: .leading, spacing: 6) {
+                Label("Schema", systemImage: "clock.badge.checkmark")
+                    .font(.caption)
+                    .fontWeight(.semibold)
+                Text(child.scheduleSummary)
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+
+            if !child.deviceUsage.isEmpty {
+                VStack(alignment: .leading, spacing: 6) {
+                    Label("Per toestel", systemImage: "iphone.and.arrow.forward")
+                        .font(.caption)
+                        .fontWeight(.semibold)
+                    ForEach(child.deviceUsage, id: \.name) { device in
+                        HStack {
+                            Text(device.name)
+                            Spacer()
+                            Text("\(device.minutes) min")
+                                .foregroundColor(.secondary)
+                        }
+                        .font(.caption)
+                    }
+                }
+            }
+
+            Label(child.insight, systemImage: "lightbulb")
+                .font(.caption)
+                .foregroundColor(.secondary)
         }
         .padding(16)
         .background(RoundedRectangle(cornerRadius: 12).fill(Color(.secondarySystemBackground)))
+    }
+}
+
+private struct PremiumQuickActions: View {
+    let onScreenTime: () -> Void
+    let onCalendar: () -> Void
+    let onSafety: () -> Void
+
+    var body: some View {
+        HStack(spacing: 8) {
+            Button(action: onScreenTime) {
+                Label("Schermtijd", systemImage: "hourglass")
+            }
+            Button(action: onCalendar) {
+                Label("Kalender", systemImage: "calendar")
+            }
+            Button(action: onSafety) {
+                Label("Safety", systemImage: "shield")
+            }
+        }
+        .buttonStyle(.bordered)
+        .font(.caption)
     }
 }
 

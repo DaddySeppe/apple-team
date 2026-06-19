@@ -3,7 +3,7 @@ import Foundation
 enum PremiumNudgeVariant: Equatable {
     case insights
     case alerts
-    case ads
+    case rewardsOverview
 }
 
 enum PremiumFeatureGate {
@@ -15,7 +15,7 @@ enum PremiumFeatureGate {
         if isPremium { return nil }
         if childrenCount >= 2 { return .insights }
         if tasksCount >= 3 { return .alerts }
-        if rewardsCount >= 2 { return .ads }
+        if rewardsCount >= 2 { return .rewardsOverview }
         return nil
     }
 }

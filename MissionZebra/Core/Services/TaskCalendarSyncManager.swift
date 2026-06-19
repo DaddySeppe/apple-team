@@ -74,6 +74,7 @@ final class TaskCalendarSyncManager {
     }
 
     func disconnect() {
+        removeSyncedEvents()
         defaults.removeObject(forKey: connectedCalendarKey)
         defaults.removeObject(forKey: eventIdsKey)
     }
@@ -84,6 +85,7 @@ final class TaskCalendarSyncManager {
         }
         guard let calendarId = connectedCalendarId,
               let calendar = eventStore.calendar(withIdentifier: calendarId) else {
+            defaults.removeObject(forKey: connectedCalendarKey)
             throw NSError(domain: "MissionZebraCalendar", code: -2, userInfo: [NSLocalizedDescriptionKey: "Kies eerst een agenda."])
         }
 
@@ -121,6 +123,19 @@ final class TaskCalendarSyncManager {
         try eventStore.commit()
         saveStoredEventIds(storedEventIds)
         return occurrences.count
+    }
+
+    private func removeSyncedEvents() {
+        guard let _ = connectedCalendarId else { return }
+        let storedEventIds = loadStoredEventIds()
+        guard !storedEventIds.isEmpty else { return }
+
+        for eventId in storedEventIds.values {
+            if let event = eventStore.event(withIdentifier: eventId) {
+                try? eventStore.remove(event, span: .thisEvent, commit: false)
+            }
+        }
+        try? eventStore.commit()
     }
 
     static func occurrences(for tasks: [MZTask], now: Date = Date()) -> [(key: String, task: MZTask, date: Date)] {

@@ -1,9 +1,8 @@
 import Foundation
 import FirebaseAuth
 import FirebaseFirestore
+import FirebaseFunctions
 import Combine
-
-private let permanentPremiumTestEmail = "test@gmail.com"
 
 struct PremiumStatus: Equatable {
     var isPremium: Bool = false
@@ -17,17 +16,13 @@ struct PremiumStatus: Equatable {
 final class PremiumRepository {
     private let auth = Auth.auth()
     private let firestore = Firestore.firestore()
+    private let functions = Functions.functions(region: "europe-west1")
 
     func premiumStatusFlow() -> AnyPublisher<PremiumStatus, Never> {
         let subject = CurrentValueSubject<PremiumStatus, Never>(PremiumStatus())
 
         guard let user = auth.currentUser else {
             return Just(PremiumStatus()).eraseToAnyPublisher()
-        }
-
-        if user.email?.caseInsensitiveCompare(permanentPremiumTestEmail) == .orderedSame {
-            grantPermanentPremiumForTestAccount(userId: user.uid)
-            return Just(PremiumStatus(isPremium: true, premiumUntil: nil)).eraseToAnyPublisher()
         }
 
         var lastKnownStatus = PremiumStatus()
@@ -66,36 +61,31 @@ final class PremiumRepository {
         Int64(Date().timeIntervalSince1970 * 1000)
     }
 
-    private func grantPermanentPremiumForTestAccount(userId: String) {
-        firestore.collection("parents").document(userId).setData([
-            "isPremium": true,
-            "premiumUntil": FieldValue.delete(),
-            "premiumSource": "testAccount"
-        ], merge: true)
-    }
-
-    func activatePremiumFromStoreKit(
+    func verifyApplePremiumPurchase(
+        transactionId: String,
         originalTransactionId: String,
-        premiumUntil: Int64?,
+        productId: String,
+        signedTransactionInfo: String,
         source: String
-    ) async -> Result<Void, Error> {
+    ) async -> Result<PremiumStatus, Error> {
         do {
-            guard let user = auth.currentUser else {
+            guard auth.currentUser != nil else {
                 throw NSError(domain: "", code: -1, userInfo: [NSLocalizedDescriptionKey: "Niet ingelogd"])
             }
-            var data: [String: Any] = [
-                "isPremium": true,
-                "iosOriginalTransactionId": originalTransactionId,
-                "premiumSource": source,
-                "premiumUpdatedAt": Int64(Date().timeIntervalSince1970 * 1000)
-            ]
-            if let premiumUntil {
-                data["premiumUntil"] = premiumUntil
-            } else {
-                data["premiumUntil"] = FieldValue.delete()
-            }
-            try await firestore.collection("parents").document(user.uid).setData(data, merge: true)
-            return .success(())
+            let request = ApplePremiumVerificationRequest(
+                transactionId: transactionId,
+                originalTransactionId: originalTransactionId,
+                productId: productId,
+                signedTransactionInfo: signedTransactionInfo,
+                source: source
+            )
+            let response = try await functions.httpsCallable("verifyApplePremiumPurchase").call(request.callableData)
+            let data = response.data as? [String: Any] ?? [:]
+            let status = PremiumStatus(
+                isPremium: FirestoreDecoding.bool(data["isPremium"]),
+                premiumUntil: Self.millis(data["premiumUntil"])
+            )
+            return .success(status)
         } catch {
             return .failure(error)
         }

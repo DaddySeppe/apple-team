@@ -229,7 +229,7 @@ private struct PremiumNudgeCard: View {
         switch variant {
         case .insights: return "Meer overzicht nodig?"
         case .alerts: return "Slimme waarschuwingen"
-        case .ads: return "Premium zonder omwegen"
+        case .rewardsOverview: return "Beloningen beter opvolgen"
         }
     }
 
@@ -239,7 +239,7 @@ private struct PremiumNudgeCard: View {
             return "Premium toont weektrends en gezinsinzichten zodra je meerdere kinderen opvolgt."
         case .alerts:
             return "Ontvang betere signalen wanneer taken en schermtijd aandacht vragen."
-        case .ads:
+        case .rewardsOverview:
             return "Houd beloningen en voortgang overzichtelijk met het premium dashboard."
         }
     }

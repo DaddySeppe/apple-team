@@ -29,6 +29,8 @@ class ChildDashboardViewModel: ObservableObject {
     private let screenTimeRepository: ScreenTimeFirebaseRepository
     private let deviceUsageRepository: DeviceUsageRepository
     private let zebraShopRepository: ZebraShopRepository
+    private let safetyUsageProducer: SafetyUsageProducer
+    private let shieldController: ScreenTimeShieldController
     private let soundManager = SoundManager()
     private var cancellables = Set<AnyCancellable>()
     private var previousPoints: Int? = nil
@@ -42,7 +44,9 @@ class ChildDashboardViewModel: ObservableObject {
         rewardsRepository: RewardFirebaseRepository = RewardFirebaseRepository(),
         screenTimeRepository: ScreenTimeFirebaseRepository = ScreenTimeFirebaseRepository(),
         deviceUsageRepository: DeviceUsageRepository = DeviceUsageRepository(),
-        zebraShopRepository: ZebraShopRepository = ZebraShopRepository()
+        zebraShopRepository: ZebraShopRepository = ZebraShopRepository(),
+        safetyUsageProducer: SafetyUsageProducer = SafetyUsageProducer(),
+        shieldController: ScreenTimeShieldController = .shared
     ) {
         self.childId = childId
         self.childName = childName
@@ -52,9 +56,12 @@ class ChildDashboardViewModel: ObservableObject {
         self.screenTimeRepository = screenTimeRepository
         self.deviceUsageRepository = deviceUsageRepository
         self.zebraShopRepository = zebraShopRepository
+        self.safetyUsageProducer = safetyUsageProducer
+        self.shieldController = shieldController
 
         screenTimeRepository.startSession()
         observeData()
+        Task { _ = await deviceUsageRepository.startDeviceActivityMonitoringIfPossible() }
         startScreenTimeAutoSync()
         checkStreak()
     }
@@ -109,6 +116,7 @@ class ChildDashboardViewModel: ObservableObject {
         .sink { [weak self] children, tasks, rewards in
             guard let self = self else { return }
             let child = children.first(where: { $0.id == self.childId })
+            self.shieldController.updateShield(for: child)
 
             // Sound logic
             let currentPoints = child?.points ?? 0
@@ -167,6 +175,10 @@ class ChildDashboardViewModel: ObservableObject {
                             minutes: snapshot.minutes,
                             source: snapshot.source.rawValue
                         )
+                        _ = await safetyUsageProducer.uploadDeviceActivitySnapshot(
+                            childId: childId,
+                            usageSnapshot: snapshot
+                        )
                     } else {
                         _ = await childrenRepository.updateAppForegroundUsage(
                             childId: childId,
@@ -187,6 +199,9 @@ class ChildDashboardViewModel: ObservableObject {
                             usedMinutes: snapshot.minutes,
                             limitMinutes: limit
                         )
+                    }
+                    await MainActor.run {
+                        shieldController.updateShield(for: uiState.child)
                     }
                 }
             }

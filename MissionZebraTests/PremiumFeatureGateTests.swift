@@ -18,7 +18,7 @@ final class PremiumFeatureGateTests: XCTestCase {
         )
         XCTAssertEqual(
             PremiumFeatureGate.nudgeVariant(childrenCount: 1, tasksCount: 1, rewardsCount: 2, isPremium: false),
-            .ads
+            .rewardsOverview
         )
         XCTAssertNil(PremiumFeatureGate.nudgeVariant(childrenCount: 3, tasksCount: 4, rewardsCount: 4, isPremium: true))
     }

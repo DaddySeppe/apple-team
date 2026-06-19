@@ -1,23 +1,7 @@
-// NOTE: Temporary run-safe guards
-// This file uses Screen Time APIs (FamilyControls/DeviceActivity) which require
-// real device testing and the Family Controls entitlement. To allow the app to
-// run on Simulator or without the entitlement, we wrap sensitive calls with
-// compile-time checks and provide safe fallbacks. Remove these guards when you
-// configure entitlements and test on a real device.
-
 import Foundation
 #if canImport(FamilyControls)
 import DeviceActivity
 import FamilyControls
-#else
-// Shims for build/run without FamilyControls/DeviceActivity
-enum AuthorizationStatusShim { case approved, denied, notDetermined }
-struct AuthorizationCenter {
-    static let shared = AuthorizationCenter()
-    var authorizationStatus: AuthorizationStatusShim { .notDetermined }
-    enum FamilyControlsScope { case individual }
-    func requestAuthorization(for: FamilyControlsScope) async throws {}
-}
 #endif
 
 /// iOS equivalent of Android's ChildScreenTimeTracker.
@@ -26,6 +10,9 @@ struct AuthorizationCenter {
 class ChildScreenTimeTracker: ObservableObject {
 
     @Published var todayUsageMinutes: Int = 0
+    @Published var fallbackMessage: String?
+
+    private let coordinator = DeviceActivityCoordinator.shared
 
     /// Check if the app has Screen Time permission
     func hasPermission() -> Bool {
@@ -44,12 +31,17 @@ class ChildScreenTimeTracker: ObservableObject {
         #if canImport(FamilyControls)
         do {
             try await AuthorizationCenter.shared.requestAuthorization(for: .individual)
+            try coordinator.startDailyMonitoring()
+            await MainActor.run { fallbackMessage = nil }
         } catch {
-            print("Failed to request Screen Time authorization: \(error)")
+            await MainActor.run {
+                fallbackMessage = error.localizedDescription
+            }
         }
         #else
-        // Running without FamilyControls: no-op so the app can run.
-        print("[Run-safe] Skipping Screen Time authorization request (FamilyControls not available)")
+        await MainActor.run {
+            fallbackMessage = "Screen Time APIs zijn niet beschikbaar op dit platform."
+        }
         #endif
     }
 
@@ -57,7 +49,7 @@ class ChildScreenTimeTracker: ObservableObject {
     /// Whole-device totals require a DeviceActivityMonitor extension and entitlement;
     /// this value is maintained by the app-level tracker as a safe fallback.
     func getTodayUsageMinutes() -> Int {
-        return todayUsageMinutes
+        coordinator.currentDeviceActivityMinutes()
     }
 
     func updateUsageMinutes(_ minutes: Int) {

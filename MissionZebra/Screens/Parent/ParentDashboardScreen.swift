@@ -114,7 +114,7 @@ struct ParentDashboardScreen: View {
                     ParentPinManager.shared.clearParentPin()
                     try? Auth.auth().signOut()
                     GIDSignIn.sharedInstance.signOut()
-                    router.goToRoot()
+                    router.reset(to: .welcome)
                 },
                 onDeleteAccount: {
                     try await deleteCurrentParentAccount()
@@ -190,7 +190,7 @@ struct ParentDashboardScreen: View {
 
         await MainActor.run {
             SessionManager.shared.clearSession()
-            router.goToRoot()
+            router.reset(to: .welcome)
         }
     }
 

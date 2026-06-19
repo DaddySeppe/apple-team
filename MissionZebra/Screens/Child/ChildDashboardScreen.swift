@@ -206,7 +206,7 @@ struct ChildDashboardScreen: View {
                 exitPinInput = ""
                 exitPinError = nil
                 viewModel.endSession()
-                router.navigate(to: .parentDashboard)
+                router.reset(to: .parentDashboard)
             } else {
                 exitPinError = "Foute code"
             }

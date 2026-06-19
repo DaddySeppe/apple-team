@@ -8,7 +8,7 @@ struct ChildLoginScreen: View {
         VStack(spacing: 0) {
             VStack(alignment: .leading) {
                 Button(action: {
-                    router.navigate(to: .welcome)
+                    router.reset(to: .welcome)
                 }) {
                     Text("⬅ Terug")
                 }
@@ -45,7 +45,7 @@ struct ChildLoginScreen: View {
                             ForEach(viewModel.uiState.children) { child in
                                 ChildSelectCard(child: child) {
                                     SessionManager.shared.setChildLoggedIn(childId: child.id, childName: child.name)
-                                    router.navigate(to: .childDashboard(childId: child.id, childName: child.name))
+                                    router.reset(to: .childDashboard(childId: child.id, childName: child.name))
                                 }
                             }
                         }

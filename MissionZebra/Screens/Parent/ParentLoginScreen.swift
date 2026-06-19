@@ -443,7 +443,7 @@ struct ParentLoginScreen: View {
     }
 
     private func navigateToModeChoice() {
-        router.navigate(to: .deviceMode)
+        router.reset(to: .deviceMode)
     }
 }
 

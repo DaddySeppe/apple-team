@@ -15,11 +15,15 @@ enum AppRoute: Hashable {
 }
 
 struct AppNavigation: View {
-    @StateObject private var router = NavigationRouter()
+    @StateObject private var router: NavigationRouter
+
+    init() {
+        _router = StateObject(wrappedValue: NavigationRouter(rootRoute: Self.startRoute()))
+    }
 
     var body: some View {
         NavigationStack(path: $router.path) {
-            rootView
+            destinationView(for: router.rootRoute)
                 .navigationDestination(for: AppRoute.self) { route in
                     destinationView(for: route)
                 }
@@ -27,30 +31,21 @@ struct AppNavigation: View {
         .environmentObject(router)
     }
 
-    @ViewBuilder
-    private var rootView: some View {
+    private static func startRoute() -> AppRoute {
         let startDest = SessionManager.shared.getStartDestination()
         switch startDest {
         case "parentDashboard":
-            ParentRoute {
-                ParentDashboardScreen()
-            }
+            return .parentDashboard
         case "childLogin":
-            ChildLoginScreen()
+            return .childLogin
         case let dest where dest.starts(with: "childDashboard/"):
             let parts = dest.split(separator: "/")
             if parts.count >= 3 {
-                ChildDashboardRoute {
-                    ChildDashboardScreen(
-                        childId: String(parts[1]),
-                        childName: String(parts[2])
-                    )
-                }
-            } else {
-                WelcomeScreen()
+                return .childDashboard(childId: String(parts[1]), childName: String(parts[2]))
             }
+            return .welcome
         default:
-            WelcomeScreen()
+            return .welcome
         }
     }
 
@@ -156,8 +151,7 @@ struct ParentRoute<Content: View>: View {
             await refreshPinState()
             return
         }
-        router.goToRoot()
-        router.navigate(to: redirect == .parentLogin ? .parentLogin : .welcome)
+        router.reset(to: redirect == .parentLogin ? .parentLogin : .welcome)
     }
 }
 
@@ -195,13 +189,17 @@ struct ChildDashboardRoute<Content: View>: View {
     @MainActor
     private func redirectIfNeeded() {
         guard let redirect else { return }
-        router.goToRoot()
-        router.navigate(to: redirect == .childLogin ? .childLogin : .welcome)
+        router.reset(to: redirect == .childLogin ? .childLogin : .welcome)
     }
 }
 
 class NavigationRouter: ObservableObject {
+    @Published var rootRoute: AppRoute
     @Published var path = NavigationPath()
+
+    init(rootRoute: AppRoute = .welcome) {
+        self.rootRoute = rootRoute
+    }
 
     func navigate(to route: AppRoute) {
         path.append(route)
@@ -215,5 +213,10 @@ class NavigationRouter: ObservableObject {
 
     func goToRoot() {
         path = NavigationPath()
+    }
+
+    func reset(to route: AppRoute) {
+        path = NavigationPath()
+        rootRoute = route
     }
 }

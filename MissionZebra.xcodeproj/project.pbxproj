@@ -99,6 +99,7 @@
 		ED9A4F81AD44396A8A81296D /* AppNavigation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C4AF819EFEB7ADC8C881753 /* AppNavigation.swift */; };
 		EFBA55173A3F6ED295CAA1FF /* TaskCalendarSyncManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = D368C7A169EF704B29FB66A5 /* TaskCalendarSyncManager.swift */; };
 		EFE0C1F4F698C5CB2426BC72 /* ChildLoginViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1C82710478DD99EED71D019D /* ChildLoginViewModel.swift */; };
+		F41AC1BD2F239DF1A3BF87E6 /* NavigationRouterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 46DC9CC7668A35F9B72B5B81 /* NavigationRouterTests.swift */; };
 		F4B59AEB595F29C9F6BA898F /* InMemoryMissionZebraRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = AEA35CF3D7B7384436CC13E0 /* InMemoryMissionZebraRepository.swift */; };
 		F51F9ACCCF7CE38D18B7E33C /* ParentAuthViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 04C29A63EA78A21B38290000 /* ParentAuthViewModel.swift */; };
 		F9EE59B0534E60938D3FBE1E /* PrivacyPolicyScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4AA83CFA4723487306DC1B59 /* PrivacyPolicyScreen.swift */; };
@@ -174,6 +175,7 @@
 		42A1C095C0A38C424E74A127 /* SecurityTab.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SecurityTab.swift; sourceTree = "<group>"; };
 		4404CA1E82A5B028E9D30929 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		46AC263E3E9D93D7C2A87768 /* RiskSignal.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RiskSignal.swift; sourceTree = "<group>"; };
+		46DC9CC7668A35F9B72B5B81 /* NavigationRouterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NavigationRouterTests.swift; sourceTree = "<group>"; };
 		474B697C8A916FBD1EEDE0EF /* ChildScreenTimeTracker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChildScreenTimeTracker.swift; sourceTree = "<group>"; };
 		4822CC8DE3C536F57B311499 /* SplashScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplashScreen.swift; sourceTree = "<group>"; };
 		4AA83CFA4723487306DC1B59 /* PrivacyPolicyScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrivacyPolicyScreen.swift; sourceTree = "<group>"; };
@@ -430,6 +432,7 @@
 			isa = PBXGroup;
 			children = (
 				FD54D81C83A42C4C2466951E /* ChildScreenTimeStatusTests.swift */,
+				46DC9CC7668A35F9B72B5B81 /* NavigationRouterTests.swift */,
 				29A6FB272B32C66A9672B9E6 /* PinSecurityTests.swift */,
 				F7035D7994D03A6284435C95 /* PremiumFeatureGateTests.swift */,
 				0456A194B305FE65A43B5403 /* RewardRedemptionPolicyTests.swift */,
@@ -811,6 +814,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				73A01908BDDFD7AF65E7FD20 /* ChildScreenTimeStatusTests.swift in Sources */,
+				F41AC1BD2F239DF1A3BF87E6 /* NavigationRouterTests.swift in Sources */,
 				DFCA3BB957118C776DCD1B05 /* PinSecurityTests.swift in Sources */,
 				681ABB2B1CA144A25CEF3580 /* PremiumFeatureGateTests.swift in Sources */,
 				4DDDCB1FD863676B6ED15069 /* RewardRedemptionPolicyTests.swift in Sources */,

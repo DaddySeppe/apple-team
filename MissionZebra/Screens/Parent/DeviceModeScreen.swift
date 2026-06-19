@@ -27,7 +27,7 @@ struct DeviceModeScreen: View {
 
                 Button(action: {
                     SessionManager.shared.setDeviceForChild(false)
-                    router.navigate(to: .parentDashboard)
+                    router.reset(to: .parentDashboard)
                 }) {
                     Text("Dit toestel is voor mij als ouder")
                         .font(.body)
@@ -40,7 +40,7 @@ struct DeviceModeScreen: View {
 
                 Button(action: {
                     SessionManager.shared.setDeviceForChild(true)
-                    router.navigate(to: .childLogin)
+                    router.reset(to: .childLogin)
                 }) {
                     Text("Dit toestel is voor een kind")
                         .font(.body)

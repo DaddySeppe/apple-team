@@ -209,7 +209,7 @@ struct TutorialScreen: View {
                 _ = await TaskFirebaseRepository().deleteTutorialData()
                 _ = await ParentChildrenFirebaseRepository().deleteTutorialChildren()
                 SessionManager.shared.clearTutorial()
-                router.navigate(to: .deviceMode)
+                router.reset(to: .deviceMode)
             }
         } else {
             router.goBack()

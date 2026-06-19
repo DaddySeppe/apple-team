@@ -17,16 +17,22 @@ struct ParentPremiumDashboardUiState {
     var avgDailyScreenTime: Int = 0
     var avgWeekTrend: [Int] = Array(repeating: 0, count: 7)
     var notifications: [String] = []
+    var premiumStatus: PremiumStatus = PremiumStatus()
 }
 
 class ParentPremiumDashboardViewModel: ObservableObject {
     @Published var uiState = ParentPremiumDashboardUiState()
 
     private let childrenRepository: ParentChildrenFirebaseRepository
+    private let premiumRepository: PremiumRepository
     private var cancellables = Set<AnyCancellable>()
 
-    init(childrenRepository: ParentChildrenFirebaseRepository = ParentChildrenFirebaseRepository()) {
+    init(
+        childrenRepository: ParentChildrenFirebaseRepository = ParentChildrenFirebaseRepository(),
+        premiumRepository: PremiumRepository = PremiumRepository()
+    ) {
         self.childrenRepository = childrenRepository
+        self.premiumRepository = premiumRepository
         setupSubscriptions()
     }
 
@@ -37,11 +43,19 @@ class ParentPremiumDashboardViewModel: ObservableObject {
                 self?.handleNewChildren(children)
             }
             .store(in: &cancellables)
+
+        premiumRepository.premiumStatusFlow()
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] status in
+                self?.uiState.premiumStatus = status
+            }
+            .store(in: &cancellables)
     }
 
     private func handleNewChildren(_ children: [Child]) {
         if children.isEmpty {
-            uiState = ParentPremiumDashboardUiState()
+            let premiumStatus = uiState.premiumStatus
+            uiState = ParentPremiumDashboardUiState(premiumStatus: premiumStatus)
             return
         }
 
@@ -74,7 +88,8 @@ class ParentPremiumDashboardViewModel: ObservableObject {
             children: premiumChildren,
             avgDailyScreenTime: avgDaily,
             avgWeekTrend: avgTrend,
-            notifications: notifs
+            notifications: notifs,
+            premiumStatus: uiState.premiumStatus
         )
     }
 
@@ -111,10 +126,20 @@ class ParentPremiumDashboardViewModel: ObservableObject {
 struct ParentPremiumDashboardScreen: View {
     @EnvironmentObject var router: NavigationRouter
     @StateObject private var viewModel = ParentPremiumDashboardViewModel()
+    @StateObject private var purchaseManager = PremiumPurchaseManager()
     @State private var showIntro = true
 
     var body: some View {
-        if showIntro {
+        if !PremiumFeatureGate.canAccessPremiumDashboard(status: viewModel.uiState.premiumStatus) {
+            PremiumPurchaseContent(
+                productPrice: purchaseManager.product?.displayPrice,
+                isLoading: purchaseManager.isLoading,
+                errorMessage: purchaseManager.errorMessage,
+                onPurchase: { Task { await purchaseManager.purchase() } },
+                onRestore: { Task { await purchaseManager.restorePurchases() } },
+                onBack: { router.goBack() }
+            )
+        } else if showIntro {
             PremiumIntroOverlay(
                 avgDailyScreenTime: viewModel.uiState.avgDailyScreenTime,
                 avgWeekTrend: viewModel.uiState.avgWeekTrend,
@@ -131,6 +156,69 @@ struct ParentPremiumDashboardScreen: View {
                 onBack: { router.goBack() }
             )
         }
+    }
+}
+
+private struct PremiumPurchaseContent: View {
+    let productPrice: String?
+    let isLoading: Bool
+    let errorMessage: String?
+    let onPurchase: () -> Void
+    let onRestore: () -> Void
+    let onBack: () -> Void
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 18) {
+                Button(action: onBack) {
+                    Label("Terug", systemImage: "arrow.left")
+                }
+                .buttonStyle(.bordered)
+
+                Text("Premium")
+                    .font(.largeTitle)
+                    .fontWeight(.bold)
+
+                Text("Ontgrendel gezinsinzichten, slimme waarschuwingen en kalender-sync.")
+                    .font(.headline)
+                    .foregroundColor(.secondary)
+
+                VStack(alignment: .leading, spacing: 12) {
+                    Label("Weekoverzicht per kind", systemImage: "chart.bar.fill")
+                    Label("Limiet-waarschuwingen voor ouders", systemImage: "bell.badge.fill")
+                    Label("Kalender-sync voor geplande taken", systemImage: "calendar.badge.clock")
+                }
+                .font(.body)
+
+                if let errorMessage {
+                    Text(errorMessage)
+                        .foregroundColor(.red)
+                        .font(.subheadline)
+                }
+
+                Button(action: onPurchase) {
+                    if isLoading {
+                        ProgressView()
+                            .frame(maxWidth: .infinity)
+                    } else {
+                        Text(productPrice.map { "Start premium - \($0)" } ?? "Start premium")
+                            .frame(maxWidth: .infinity)
+                    }
+                }
+                .buttonStyle(.borderedProminent)
+                .disabled(isLoading)
+
+                Button("Aankopen herstellen", action: onRestore)
+                    .buttonStyle(.bordered)
+                    .disabled(isLoading)
+
+                Text("Aankopen worden met StoreKit geverifieerd en gekoppeld aan het ouderaccount.")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+            .padding(24)
+        }
+        .background(Color(.systemBackground))
     }
 }
 

@@ -190,6 +190,16 @@ struct SecurityPage: View {
         } message: {
             Text("Hiermee verwijder je je ouderaccount, kinderen, taken, beloningen en schermtijdgegevens permanent.")
         }
+        .onChange(of: notifyOnTaskDone) { enabled in
+            if enabled {
+                NotificationManager.shared.requestPermissionIfNeeded()
+            }
+        }
+        .onChange(of: notifyOnRewardRedeemed) { enabled in
+            if enabled {
+                NotificationManager.shared.requestPermissionIfNeeded()
+            }
+        }
     }
 
     private func deleteAccount() {

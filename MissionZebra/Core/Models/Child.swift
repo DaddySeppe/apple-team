@@ -10,6 +10,7 @@ struct Child: Identifiable, Codable, Equatable {
 
     var purchasedAccessoryIds: [String] = []
     var equippedAccessoryId: String? = nil
+    var equippedItems: [String: String] = [:]
 
     var streak: Int = 0
     var lastStreakCheckDate: String? = nil // "YYYY-MM-DD"

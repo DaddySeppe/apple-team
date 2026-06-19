@@ -25,6 +25,16 @@ struct ParentDashboardUiState {
     var familyInsight: String = ""
     var isAddingChild: Bool = false
     var addChildError: String? = nil
+    var premiumStatus: PremiumStatus = PremiumStatus()
+
+    var premiumNudgeVariant: PremiumNudgeVariant? {
+        PremiumFeatureGate.nudgeVariant(
+            childrenCount: children.count,
+            tasksCount: tasks.count,
+            rewardsCount: rewards.count,
+            isPremium: premiumStatus.isPremium
+        )
+    }
 }
 
 class ParentDashboardViewModel: ObservableObject {
@@ -33,6 +43,7 @@ class ParentDashboardViewModel: ObservableObject {
     private let tasksRepository: TaskFirebaseRepository
     private let childrenRepository: ParentChildrenFirebaseRepository
     private let rewardsRepository: RewardFirebaseRepository
+    private let premiumRepository: PremiumRepository
     private var cancellables = Set<AnyCancellable>()
 
     // 🔹 KORTE MICRO-TIPS VOOR OUDERS
@@ -49,11 +60,13 @@ class ParentDashboardViewModel: ObservableObject {
     init(
         tasksRepository: TaskFirebaseRepository = TaskFirebaseRepository(),
         childrenRepository: ParentChildrenFirebaseRepository = ParentChildrenFirebaseRepository(),
-        rewardsRepository: RewardFirebaseRepository = RewardFirebaseRepository()
+        rewardsRepository: RewardFirebaseRepository = RewardFirebaseRepository(),
+        premiumRepository: PremiumRepository = PremiumRepository()
     ) {
         self.tasksRepository = tasksRepository
         self.childrenRepository = childrenRepository
         self.rewardsRepository = rewardsRepository
+        self.premiumRepository = premiumRepository
 
         uiState.parentTip = generateDailyTip()
         setupSubscriptions()
@@ -87,6 +100,13 @@ class ParentDashboardViewModel: ObservableObject {
             .receive(on: DispatchQueue.main)
             .sink { [weak self] rewards in
                 self?.uiState.rewards = rewards
+            }
+            .store(in: &cancellables)
+
+        premiumRepository.premiumStatusFlow()
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] status in
+                self?.uiState.premiumStatus = status
             }
             .store(in: &cancellables)
     }

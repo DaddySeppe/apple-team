@@ -65,6 +65,9 @@ class ParentChildrenFirebaseRepository: ObservableObject {
                     isBlocked: isBlocked,
                     purchasedAccessoryIds: (data["purchasedAccessoryIds"] as? [String]) ?? [],
                     equippedAccessoryId: data["equippedAccessoryId"] as? String,
+                    equippedItems: FirestoreDecoding.stringMap(data["equippedItems"]).isEmpty
+                        ? Self.legacyEquippedItems(data["equippedAccessoryId"] as? String)
+                        : FirestoreDecoding.stringMap(data["equippedItems"]),
                     streak: data["streak"] as? Int ?? 0,
                     lastStreakCheckDate: data["lastStreakCheckDate"] as? String,
                     motivationalMessage: data["motivationalMessage"] as? String,
@@ -263,5 +266,10 @@ class ParentChildrenFirebaseRepository: ObservableObject {
             }
         }
         return result
+    }
+
+    private static func legacyEquippedItems(_ accessoryId: String?) -> [String: String] {
+        guard let accessoryId else { return [:] }
+        return [ZebraCategory.HOOFD.rawValue: accessoryId]
     }
 }

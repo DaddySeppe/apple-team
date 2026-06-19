@@ -279,6 +279,10 @@ class ChildDashboardViewModel: ObservableObject {
         return zebraShopRepository.availableAccessories
     }
 
+    var accessoriesByCategory: [ZebraCategory: [Accessory]] {
+        Dictionary(grouping: availableAccessories, by: { $0.category })
+    }
+
     func toggleShop(isOpen: Bool) {
         uiState.isShopOpen = isOpen
     }
@@ -298,5 +302,33 @@ class ChildDashboardViewModel: ObservableObject {
         Task {
             _ = await zebraShopRepository.equipAccessory(childId: childId, accessoryId: accessoryId)
         }
+    }
+
+    func equipCategoryItem(category: ZebraCategory, accessoryId: String?) {
+        Task {
+            let result = await zebraShopRepository.equipCategoryItem(
+                childId: childId,
+                category: category,
+                accessoryId: accessoryId
+            )
+            await MainActor.run {
+                if case .failure(let error) = result {
+                    uiState.error = error.localizedDescription
+                }
+            }
+        }
+    }
+
+    func accessoryEmoji(for child: Child?) -> String? {
+        guard let child else { return nil }
+        if let headItemId = child.equippedItems[ZebraCategory.HOOFD.rawValue],
+           let headAccessory = availableAccessories.first(where: { $0.id == headItemId }) {
+            return headAccessory.emoji
+        }
+        if let fallbackId = child.equippedAccessoryId,
+           let fallback = availableAccessories.first(where: { $0.id == fallbackId }) {
+            return fallback.emoji
+        }
+        return nil
     }
 }

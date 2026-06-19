@@ -2,6 +2,8 @@ import SwiftUI
 
 struct TaskCalendarScreen: View {
     @EnvironmentObject var router: NavigationRouter
+    @StateObject private var viewModel = TaskCalendarViewModel()
+    @State private var showCalendarPicker = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -34,7 +36,44 @@ struct TaskCalendarScreen: View {
                     .frame(maxWidth: .infinity)
                     .background(RoundedRectangle(cornerRadius: 12).fill(Color(.secondarySystemBackground)))
 
-                    TaskCalendarView()
+                    CalendarSyncCard(
+                        isPremium: viewModel.premiumStatus.isPremium,
+                        isConnected: viewModel.isCalendarConnected,
+                        calendars: viewModel.availableCalendars,
+                        connectedCalendarId: viewModel.connectedCalendarId,
+                        isSyncing: viewModel.isSyncingCalendar,
+                        message: viewModel.calendarMessage,
+                        error: viewModel.calendarError,
+                        onConnect: { showCalendarPicker = true },
+                        onSync: { viewModel.syncNow() },
+                        onDisconnect: { viewModel.disconnectCalendar() }
+                    )
+
+                    TaskCalendarView(
+                        tasksPerDay: viewModel.tasksPerDay,
+                        selectedDate: viewModel.selectedDate,
+                        onSelectDate: { viewModel.selectDate($0) }
+                    )
+
+                    if !viewModel.tasksForSelectedDate.isEmpty {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Taken op deze dag")
+                                .font(.headline)
+                            ForEach(viewModel.tasksForSelectedDate) { task in
+                                HStack {
+                                    Text(task.title)
+                                    Spacer()
+                                    Text("\(task.points) punten")
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                }
+                                .padding(.vertical, 4)
+                            }
+                        }
+                        .padding(16)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .background(RoundedRectangle(cornerRadius: 12).fill(Color(.secondarySystemBackground)))
+                    }
 
                     // Info card
                     VStack(spacing: 8) {
@@ -53,13 +92,105 @@ struct TaskCalendarScreen: View {
                 .padding(.bottom, 16)
             }
         }
+        .onAppear { viewModel.refreshCalendars() }
+        .confirmationDialog("Kies agenda", isPresented: $showCalendarPicker) {
+            ForEach(viewModel.availableCalendars) { calendar in
+                Button(calendar.title) {
+                    viewModel.connectCalendar(calendarId: calendar.id)
+                }
+            }
+            Button("Annuleren", role: .cancel) {}
+        }
+    }
+}
+
+private struct CalendarSyncCard: View {
+    let isPremium: Bool
+    let isConnected: Bool
+    let calendars: [TaskCalendarDestination]
+    let connectedCalendarId: String?
+    let isSyncing: Bool
+    let message: String?
+    let error: String?
+    let onConnect: () -> Void
+    let onSync: () -> Void
+    let onDisconnect: () -> Void
+
+    private var connectedTitle: String {
+        calendars.first(where: { $0.id == connectedCalendarId })?.title ?? "Gekoppelde agenda"
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Label("Kalender-sync", systemImage: "calendar.badge.clock")
+                    .font(.headline)
+                Spacer()
+                if isPremium {
+                    Text(isConnected ? "Verbonden" : "Premium")
+                        .font(.caption)
+                        .fontWeight(.bold)
+                        .foregroundColor(isConnected ? .green : .secondary)
+                } else {
+                    Text("Premium")
+                        .font(.caption)
+                        .fontWeight(.bold)
+                        .foregroundColor(.orange)
+                }
+            }
+
+            Text(isPremium ? (isConnected ? "Taken worden gesynchroniseerd naar \(connectedTitle)." : "Koppel een agenda om taken te synchroniseren.") : "Upgrade naar premium om taken naar je iOS-agenda te synchroniseren.")
+                .font(.subheadline)
+                .foregroundColor(.secondary)
+
+            if let message {
+                Text(message)
+                    .font(.caption)
+                    .foregroundColor(.green)
+            }
+            if let error {
+                Text(error)
+                    .font(.caption)
+                    .foregroundColor(.red)
+            }
+
+            HStack {
+                if isConnected {
+                    Button(action: onSync) {
+                        if isSyncing {
+                            ProgressView()
+                        } else {
+                            Label("Sync nu", systemImage: "arrow.triangle.2.circlepath")
+                        }
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .disabled(isSyncing || !isPremium)
+
+                    Button("Loskoppelen", role: .destructive, action: onDisconnect)
+                        .buttonStyle(.bordered)
+                } else {
+                    Button(action: onConnect) {
+                        Label("Koppel agenda", systemImage: "link")
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .disabled(!isPremium)
+                }
+            }
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(RoundedRectangle(cornerRadius: 12).fill(Color(.secondarySystemBackground)))
     }
 }
 
 // MARK: - Task Calendar View
 
 struct TaskCalendarView: View {
-    @State private var selectedDate = Date()
+    let tasksPerDay: [String: Int]
+    let selectedDate: Date?
+    let onSelectDate: (Date) -> Void
+
+    @State private var visibleMonth = Date()
 
     private let dayLabels = ["Ma", "Di", "Wo", "Do", "Vr", "Za", "Zo"]
 
@@ -103,17 +234,34 @@ struct TaskCalendarView: View {
                             Text("")
                                 .frame(maxWidth: .infinity, minHeight: 36)
                         } else {
+                            let date = dateFor(day: day)
                             let isToday = isCurrentDay(day)
-                            Text("\(day)")
-                                .font(.caption)
-                                .fontWeight(isToday ? .bold : .regular)
-                                .foregroundColor(isToday ? .white : .primary)
-                                .frame(maxWidth: .infinity, minHeight: 36)
+                            let isSelected = date.map { dayDate in
+                                selectedDate.map { Calendar.current.isDate($0, inSameDayAs: dayDate) } ?? false
+                            } ?? false
+                            let count = date.map { tasksPerDay[TaskOrdering.dateKey(from: $0)] ?? 0 } ?? 0
+                            Button(action: {
+                                if let date { onSelectDate(date) }
+                            }) {
+                                VStack(spacing: 2) {
+                                    Text("\(day)")
+                                        .font(.caption)
+                                        .fontWeight(isToday || isSelected ? .bold : .regular)
+                                    if count > 0 {
+                                        Text("\(count)")
+                                            .font(.system(size: 9))
+                                            .fontWeight(.bold)
+                                    }
+                                }
+                                .foregroundColor(isToday || isSelected ? .white : .primary)
+                                .frame(maxWidth: .infinity, minHeight: 40)
                                 .background(
                                     Circle()
-                                        .fill(isToday ? Color.accentColor : Color.clear)
-                                        .frame(width: 32, height: 32)
+                                        .fill(isSelected ? Color.orange : (isToday ? Color.accentColor : Color.clear))
+                                        .frame(width: 34, height: 34)
                                 )
+                            }
+                            .buttonStyle(.plain)
                         }
                     }
                 }
@@ -127,12 +275,12 @@ struct TaskCalendarView: View {
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "nl_BE")
         formatter.dateFormat = "MMMM yyyy"
-        return formatter.string(from: selectedDate).capitalized
+        return formatter.string(from: visibleMonth).capitalized
     }
 
     private func changeMonth(by value: Int) {
-        if let newDate = Calendar.current.date(byAdding: .month, value: value, to: selectedDate) {
-            selectedDate = newDate
+        if let newDate = Calendar.current.date(byAdding: .month, value: value, to: visibleMonth) {
+            visibleMonth = newDate
         }
     }
 
@@ -140,13 +288,13 @@ struct TaskCalendarView: View {
         let cal = Calendar.current
         let today = Date()
         return cal.component(.day, from: today) == day
-            && cal.component(.month, from: today) == cal.component(.month, from: selectedDate)
-            && cal.component(.year, from: today) == cal.component(.year, from: selectedDate)
+            && cal.component(.month, from: today) == cal.component(.month, from: visibleMonth)
+            && cal.component(.year, from: today) == cal.component(.year, from: visibleMonth)
     }
 
     private func generateDays() -> [Int] {
         let cal = Calendar.current
-        var comps = cal.dateComponents([.year, .month], from: selectedDate)
+        var comps = cal.dateComponents([.year, .month], from: visibleMonth)
         comps.day = 1
         guard let firstOfMonth = cal.date(from: comps) else { return [] }
 
@@ -166,6 +314,12 @@ struct TaskCalendarView: View {
             result.append(0)
         }
         return result
+    }
+
+    private func dateFor(day: Int) -> Date? {
+        var comps = Calendar.current.dateComponents([.year, .month], from: visibleMonth)
+        comps.day = day
+        return Calendar.current.date(from: comps)
     }
 }
 

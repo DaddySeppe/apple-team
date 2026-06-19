@@ -1,5 +1,6 @@
 import Foundation
 import UserNotifications
+import UIKit
 
 /// Manages local push notifications for screen time alerts.
 /// Sends notifications like Snapchat-style banners when a child
@@ -18,13 +19,39 @@ class NotificationManager {
 
     // MARK: - Permission
 
-    /// Request notification permission. Call this early (e.g. in AppDelegate).
-    func requestPermission() {
+    /// Request notification permission from a contextual user action, then register APNS/FCM.
+    func requestPermission(completion: ((Bool) -> Void)? = nil) {
         center.requestAuthorization(options: [.alert, .sound, .badge]) { granted, error in
             if let error = error {
                 print("[NotificationManager] Permission error: \(error.localizedDescription)")
             }
             print("[NotificationManager] Permission granted: \(granted)")
+            if granted {
+                DispatchQueue.main.async {
+                    UIApplication.shared.registerForRemoteNotifications()
+                    FirebaseMessagingManager.shared.refreshAndStoreToken()
+                }
+            }
+            completion?(granted)
+        }
+    }
+
+    func requestPermissionIfNeeded(completion: ((Bool) -> Void)? = nil) {
+        center.getNotificationSettings { [weak self] settings in
+            switch settings.authorizationStatus {
+            case .authorized, .provisional, .ephemeral:
+                DispatchQueue.main.async {
+                    UIApplication.shared.registerForRemoteNotifications()
+                    FirebaseMessagingManager.shared.refreshAndStoreToken()
+                }
+                completion?(true)
+            case .notDetermined:
+                self?.requestPermission(completion: completion)
+            case .denied:
+                completion?(false)
+            @unknown default:
+                completion?(false)
+            }
         }
     }
 

@@ -61,7 +61,7 @@ struct ChildDashboardScreen: View {
                     if state.isFocusModeActive {
                         FocusModeOverlay(
                             onStopClick: { viewModel.stopFocusMode() },
-                            equippedAccessoryEmoji: viewModel.availableAccessories.first(where: { $0.id == state.child?.equippedAccessoryId })?.emoji
+                            equippedAccessoryEmoji: viewModel.accessoryEmoji(for: state.child)
                         )
                     }
                 }
@@ -116,7 +116,7 @@ struct ChildDashboardScreen: View {
                         name: state.child?.name ?? childName,
                         points: points,
                         streak: state.child?.streak ?? 0,
-                        equippedAccessoryEmoji: viewModel.availableAccessories.first(where: { $0.id == state.child?.equippedAccessoryId })?.emoji,
+                        equippedAccessoryEmoji: viewModel.accessoryEmoji(for: state.child),
                         usedMinutes: usedMinutes,
                         limitMinutes: limitMinutes,
                         onParentAccessClick: { showExitPinDialog = true },
@@ -182,13 +182,15 @@ struct ChildDashboardScreen: View {
 
     @ViewBuilder
     private func shopSheet(state: ChildDashboardUiState) -> some View {
-        ZebraShopSheet(
+        ZebraCustomizerScreen(
             points: state.child?.points ?? 0,
-            availableAccessories: viewModel.availableAccessories,
+            accessoriesByCategory: viewModel.accessoriesByCategory,
             purchasedIds: state.child?.purchasedAccessoryIds ?? [],
-            equippedId: state.child?.equippedAccessoryId,
+            equippedItems: state.child?.equippedItems ?? [:],
             onBuy: { viewModel.buyAccessory(accessory: $0) },
-            onEquip: { viewModel.equipAccessory(accessoryId: $0) },
+            onEquipCategory: { category, accessoryId in
+                viewModel.equipCategoryItem(category: category, accessoryId: accessoryId)
+            },
             onDismiss: { viewModel.toggleShop(isOpen: false) }
         )
     }

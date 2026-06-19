@@ -1,5 +1,6 @@
 import SwiftUI
 import FirebaseCore
+import FirebaseMessaging
 import GoogleSignIn
 import UserNotifications
 
@@ -13,9 +14,9 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
         // Initialize Firebase
         FirebaseApp.configure()
 
-        // Request notification permission & allow banners while app is open
-        NotificationManager.shared.requestPermission()
+        // Configure delegates. Permission is requested later from contextual settings/flows.
         UNUserNotificationCenter.current().delegate = self
+        Messaging.messaging().delegate = FirebaseMessagingManager.shared
 
         return true
     }
@@ -26,6 +27,15 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
         options: [UIApplication.OpenURLOptionsKey: Any] = [:]
     ) -> Bool {
         GIDSignIn.sharedInstance.handle(url)
+    }
+
+    func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
+        Messaging.messaging().apnsToken = deviceToken
+        FirebaseMessagingManager.shared.refreshAndStoreToken()
+    }
+
+    func application(_ application: UIApplication, didFailToRegisterForRemoteNotificationsWithError error: Error) {
+        print("[Notifications] APNS registration failed: \(error.localizedDescription)")
     }
 
     // Show notification banners even when the app is in the foreground (Snapchat-style)

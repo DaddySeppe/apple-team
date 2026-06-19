@@ -33,19 +33,25 @@ class ChildDashboardFirebaseRepository: ObservableObject {
                 }
 
                 let data = snapshot.data() ?? [:]
+                let equippedItems = FirestoreDecoding.stringMap(data["equippedItems"])
                 let child = Child(
                     id: snapshot.documentID,
                     name: data["name"] as? String ?? "",
-                    points: data["points"] as? Int ?? 0,
-                    dailyScreenTimeUsedMinutes: data["dailyScreenTimeUsedMinutes"] as? Int ?? 0,
-                    dailyScreenTimeLimitMinutes: data["dailyScreenTimeLimitMinutes"] as? Int ?? 120,
-                    isBlocked: data["isBlocked"] as? Bool ?? false,
+                    points: FirestoreDecoding.int(data["points"]),
+                    dailyScreenTimeUsedMinutes: FirestoreDecoding.int(data["dailyScreenTimeUsedMinutes"]),
+                    dailyScreenTimeLimitMinutes: FirestoreDecoding.int(data["dailyScreenTimeLimitMinutes"], default: 120),
+                    isBlocked: FirestoreDecoding.bool(data["isBlocked"]),
                     purchasedAccessoryIds: data["purchasedAccessoryIds"] as? [String] ?? [],
                     equippedAccessoryId: data["equippedAccessoryId"] as? String,
-                    streak: data["streak"] as? Int ?? 0,
+                    equippedItems: equippedItems.isEmpty ? Self.legacyEquippedItems(data["equippedAccessoryId"] as? String) : equippedItems,
+                    streak: FirestoreDecoding.int(data["streak"]),
                     lastStreakCheckDate: data["lastStreakCheckDate"] as? String,
                     motivationalMessage: data["motivationalMessage"] as? String,
-                    screenTimeHistory: data["screenTimeHistory"] as? [String: Int] ?? [:]
+                    screenTimeHistory: FirestoreDecoding.intMap(data["screenTimeHistory"]),
+                    deviceScreenTimes: FirestoreDecoding.intMap(data["deviceScreenTimes"]),
+                    deviceNames: FirestoreDecoding.stringMap(data["deviceNames"]),
+                    deviceScreenTimeDates: FirestoreDecoding.stringMap(data["deviceScreenTimeDates"]),
+                    screenTimePermissionGranted: data["screenTimePermissionGranted"] as? Bool
                 )
                 subject.send(child)
             }
@@ -74,10 +80,21 @@ class ChildDashboardFirebaseRepository: ObservableObject {
                     return MZTask(
                         id: doc.documentID,
                         title: data["title"] as? String ?? "",
-                        points: data["points"] as? Int ?? 0,
+                        points: FirestoreDecoding.int(data["points"]),
                         childId: data["childId"] as? String,
-                        pendingApproval: data["pendingApproval"] as? Bool ?? false,
-                        completed: data["completed"] as? Bool ?? false
+                        childName: data["childName"] as? String,
+                        parentId: data["parentId"] as? String,
+                        pendingApproval: FirestoreDecoding.bool(data["pendingApproval"]),
+                        completed: FirestoreDecoding.bool(data["completed"]),
+                        dueDate: data["dueDate"] as? String,
+                        recurrence: data["recurrence"] as? String,
+                        purpose: data["purpose"] as? String ?? "",
+                        contributionTarget: data["contributionTarget"] as? String ?? "",
+                        childReflection: data["childReflection"] as? String ?? "",
+                        effortLevel: data["effortLevel"] as? String ?? "",
+                        parentFeedback: data["parentFeedback"] as? String ?? "",
+                        createdAt: FirestoreDecoding.int64(data["createdAt"]),
+                        updatedAt: FirestoreDecoding.int64(data["updatedAt"])
                     )
                 }
                 subject.send(tasks)
@@ -148,5 +165,10 @@ class ChildDashboardFirebaseRepository: ObservableObject {
         try? await childDoc(childId: childId).setData([
             "lastSessionEndedAt": Timestamp(date: Date())
         ], merge: true)
+    }
+
+    private static func legacyEquippedItems(_ accessoryId: String?) -> [String: String] {
+        guard let accessoryId else { return [:] }
+        return [ZebraCategory.HOOFD.rawValue: accessoryId]
     }
 }

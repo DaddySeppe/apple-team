@@ -3,6 +3,8 @@ import Combine
 
 class TaskCalendarViewModel: ObservableObject {
     private let tasksRepository: TaskFirebaseRepository
+    private let premiumRepository: PremiumRepository
+    private let calendarSyncManager: TaskCalendarSyncManager
     private var cancellables = Set<AnyCancellable>()
 
     /// selected date by user (nil means no date selected)
@@ -10,13 +12,28 @@ class TaskCalendarViewModel: ObservableObject {
 
     @Published private(set) var tasksPerDay: [String: Int] = [:] // ISO date -> count
     @Published private(set) var tasksForSelectedDate: [MZTask] = []
+    @Published private(set) var premiumStatus = PremiumStatus()
+    @Published private(set) var availableCalendars: [TaskCalendarDestination] = []
+    @Published private(set) var connectedCalendarId: String?
+    @Published private(set) var isCalendarConnected = false
+    @Published private(set) var isSyncingCalendar = false
+    @Published private(set) var calendarMessage: String?
+    @Published private(set) var calendarError: String?
 
     private var tasks: [MZTask] = [] {
         didSet { computeMaps() }
     }
 
-    init(tasksRepository: TaskFirebaseRepository = TaskFirebaseRepository()) {
+    init(
+        tasksRepository: TaskFirebaseRepository = TaskFirebaseRepository(),
+        premiumRepository: PremiumRepository = PremiumRepository(),
+        calendarSyncManager: TaskCalendarSyncManager = TaskCalendarSyncManager()
+    ) {
         self.tasksRepository = tasksRepository
+        self.premiumRepository = premiumRepository
+        self.calendarSyncManager = calendarSyncManager
+        self.connectedCalendarId = calendarSyncManager.connectedCalendarId
+        self.isCalendarConnected = calendarSyncManager.isConnected
         subscribe()
     }
 
@@ -25,6 +42,16 @@ class TaskCalendarViewModel: ObservableObject {
             .receive(on: DispatchQueue.main)
             .sink { [weak self] tasks in
                 self?.tasks = tasks
+            }
+            .store(in: &cancellables)
+
+        premiumRepository.premiumStatusFlow()
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] status in
+                self?.premiumStatus = status
+                if status.isPremium {
+                    self?.refreshCalendars()
+                }
             }
             .store(in: &cancellables)
 
@@ -103,6 +130,64 @@ class TaskCalendarViewModel: ObservableObject {
             selectedDate = nil
         } else {
             selectedDate = date
+        }
+    }
+
+    func refreshCalendars() {
+        guard premiumStatus.isPremium else { return }
+        Task {
+            let calendars = await calendarSyncManager.availableCalendars()
+            await MainActor.run {
+                availableCalendars = calendars
+                connectedCalendarId = calendarSyncManager.connectedCalendarId
+                isCalendarConnected = calendarSyncManager.isConnected
+            }
+        }
+    }
+
+    func connectCalendar(calendarId: String) {
+        guard premiumStatus.isPremium else {
+            calendarError = "Kalender-sync is een premium functie."
+            return
+        }
+        calendarSyncManager.connect(calendarId: calendarId)
+        connectedCalendarId = calendarId
+        isCalendarConnected = true
+        calendarMessage = "Agenda gekoppeld."
+        calendarError = nil
+    }
+
+    func disconnectCalendar() {
+        calendarSyncManager.disconnect()
+        connectedCalendarId = nil
+        isCalendarConnected = false
+        calendarMessage = "Agenda losgekoppeld."
+        calendarError = nil
+    }
+
+    func syncNow() {
+        guard premiumStatus.isPremium else {
+            calendarError = "Kalender-sync is een premium functie."
+            return
+        }
+        isSyncingCalendar = true
+        calendarError = nil
+        calendarMessage = nil
+        Task {
+            do {
+                let count = try await calendarSyncManager.sync(tasks: tasks)
+                await MainActor.run {
+                    isSyncingCalendar = false
+                    calendarMessage = "\(count) taakmomenten gesynchroniseerd."
+                    connectedCalendarId = calendarSyncManager.connectedCalendarId
+                    isCalendarConnected = calendarSyncManager.isConnected
+                }
+            } catch {
+                await MainActor.run {
+                    isSyncingCalendar = false
+                    calendarError = error.localizedDescription
+                }
+            }
         }
     }
 }

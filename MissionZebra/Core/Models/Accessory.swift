@@ -5,5 +5,6 @@ struct Accessory: Identifiable, Codable, Equatable {
     let name: String
     let price: Int
     let emoji: String
+    var category: ZebraCategory = .EXTRA
     var description: String = ""
 }

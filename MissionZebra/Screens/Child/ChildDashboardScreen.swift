@@ -61,7 +61,7 @@ struct ChildDashboardScreen: View {
                     if state.isFocusModeActive {
                         FocusModeOverlay(
                             onStopClick: { viewModel.stopFocusMode() },
-                            equippedAccessoryEmoji: viewModel.availableAccessories.first(where: { $0.id == state.child?.equippedAccessoryId })?.emoji
+                            equippedAccessoryEmoji: viewModel.accessoryEmoji(for: state.child)
                         )
                     }
                 }
@@ -116,7 +116,7 @@ struct ChildDashboardScreen: View {
                         name: state.child?.name ?? childName,
                         points: points,
                         streak: state.child?.streak ?? 0,
-                        equippedAccessoryEmoji: viewModel.availableAccessories.first(where: { $0.id == state.child?.equippedAccessoryId })?.emoji,
+                        equippedAccessoryEmoji: viewModel.accessoryEmoji(for: state.child),
                         usedMinutes: usedMinutes,
                         limitMinutes: limitMinutes,
                         onParentAccessClick: { showExitPinDialog = true },
@@ -156,9 +156,12 @@ struct ChildDashboardScreen: View {
             tasks: state.tasks,
             rewards: state.rewards,
             points: points,
-            onTaskDone: { taskId in
-                viewModel.markTaskDone(taskId: taskId)
-                showConfetti = true
+            onTaskDone: { taskId, reflection, effort in
+                viewModel.markTaskDone(
+                    taskId: taskId,
+                    childReflection: reflection,
+                    effortLevel: effort
+                )
             },
             onRewardRedeem: { viewModel.redeemReward(rewardId: $0) }
         )
@@ -179,13 +182,15 @@ struct ChildDashboardScreen: View {
 
     @ViewBuilder
     private func shopSheet(state: ChildDashboardUiState) -> some View {
-        ZebraShopSheet(
+        ZebraCustomizerScreen(
             points: state.child?.points ?? 0,
-            availableAccessories: viewModel.availableAccessories,
+            accessoriesByCategory: viewModel.accessoriesByCategory,
             purchasedIds: state.child?.purchasedAccessoryIds ?? [],
-            equippedId: state.child?.equippedAccessoryId,
+            equippedItems: state.child?.equippedItems ?? [:],
             onBuy: { viewModel.buyAccessory(accessory: $0) },
-            onEquip: { viewModel.equipAccessory(accessoryId: $0) },
+            onEquipCategory: { category, accessoryId in
+                viewModel.equipCategoryItem(category: category, accessoryId: accessoryId)
+            },
             onDismiss: { viewModel.toggleShop(isOpen: false) }
         )
     }
@@ -457,7 +462,7 @@ private struct PlayfulTaskRewardSection: View {
     let tasks: [MZTask]
     let rewards: [Reward]
     let points: Int
-    let onTaskDone: (String) -> Void
+    let onTaskDone: (String, String, String) -> Void
     let onRewardRedeem: (String) -> Void
 
     @State private var showCompleted = false
@@ -480,7 +485,9 @@ private struct PlayfulTaskRewardSection: View {
                     .font(.subheadline)
             } else {
                 ForEach(activeTasks) { task in
-                    ChildTaskCard(task: task, onDoneClick: { onTaskDone(task.id) })
+                    ChildTaskCard(task: task, onDoneClick: { reflection, effort in
+                        onTaskDone(task.id, reflection, effort)
+                    })
                 }
 
                 if !completedTasks.isEmpty {
@@ -494,7 +501,9 @@ private struct PlayfulTaskRewardSection: View {
 
                     if showCompleted {
                         ForEach(completedTasks) { task in
-                            ChildTaskCard(task: task, onDoneClick: { onTaskDone(task.id) })
+                            ChildTaskCard(task: task, onDoneClick: { reflection, effort in
+                                onTaskDone(task.id, reflection, effort)
+                            })
                         }
                     }
                 }
@@ -530,7 +539,10 @@ private struct PlayfulTaskRewardSection: View {
 
 private struct ChildTaskCard: View {
     let task: MZTask
-    let onDoneClick: () -> Void
+    let onDoneClick: (String, String) -> Void
+
+    @State private var showCompletionDialog = false
+    @State private var reflection = ""
 
     private var isPending: Bool { task.pendingApproval && !task.completed }
     private var canReportDone: Bool { !task.pendingApproval && !task.completed }
@@ -573,6 +585,18 @@ private struct ChildTaskCard: View {
                 Text("\(task.points) punten")
                     .font(.subheadline)
 
+                if !task.purpose.isEmpty {
+                    Text(task.purpose)
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+
+                if !task.contributionTarget.isEmpty {
+                    Text(task.contributionTarget)
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+
                 Text(statusText)
                     .font(.caption)
             }
@@ -580,13 +604,35 @@ private struct ChildTaskCard: View {
             Spacer()
 
             if canReportDone {
-                Button("Klaar", action: onDoneClick)
+                Button("Klaar") {
+                    showCompletionDialog = true
+                }
                     .buttonStyle(.borderedProminent)
             }
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 12)
         .background(RoundedRectangle(cornerRadius: 20).fill(backgroundColor))
+        .alert("Taak klaar?", isPresented: $showCompletionDialog) {
+            TextField("Wat ging goed?", text: $reflection)
+            Button("Makkelijk") {
+                submitCompletion(effort: MZTask.effortEasy)
+            }
+            Button("Normaal") {
+                submitCompletion(effort: MZTask.effortNormal)
+            }
+            Button("Moeilijk") {
+                submitCompletion(effort: MZTask.effortHard)
+            }
+            Button("Annuleren", role: .cancel) {}
+        } message: {
+            Text("Je ouder kijkt de taak na voordat je punten krijgt.")
+        }
+    }
+
+    private func submitCompletion(effort: String) {
+        onDoneClick(reflection.trimmingCharacters(in: .whitespacesAndNewlines), effort)
+        reflection = ""
     }
 }
 

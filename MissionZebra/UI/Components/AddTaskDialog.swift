@@ -7,11 +7,19 @@ struct AddTaskDialog: View {
     let selectedChildId: String?
     let title: String
     let points: String
+    let dueDate: Date
+    let repeatsWeekly: Bool
+    let purpose: String
+    let contributionTarget: String
     let isSaving: Bool
     let error: String?
     let onChildSelected: (String) -> Void
     let onTitleChange: (String) -> Void
     let onPointsChange: (String) -> Void
+    let onDueDateChange: (Date) -> Void
+    let onRepeatsWeeklyChange: (Bool) -> Void
+    let onPurposeChange: (String) -> Void
+    let onContributionTargetChange: (String) -> Void
     let onAddClick: () -> Void
     let onDismiss: () -> Void
 
@@ -52,6 +60,34 @@ struct AddTaskDialog: View {
                             set: { onPointsChange($0) }
                         ))
                         .keyboardType(.numberPad)
+                    }
+
+                    Section("Planning") {
+                        DatePicker(
+                            "Vervaldatum",
+                            selection: Binding(
+                                get: { dueDate },
+                                set: { onDueDateChange($0) }
+                            ),
+                            displayedComponents: .date
+                        )
+
+                        Toggle("Wekelijks herhalen", isOn: Binding(
+                            get: { repeatsWeekly },
+                            set: { onRepeatsWeeklyChange($0) }
+                        ))
+                    }
+
+                    Section("Waarom deze taak?") {
+                        TextField("Bijv. Een rustige kamer helpt je slapen", text: Binding(
+                            get: { purpose },
+                            set: { onPurposeChange($0) }
+                        ), axis: .vertical)
+
+                        TextField("Bijv. Helpt het gezin / spaardoel", text: Binding(
+                            get: { contributionTarget },
+                            set: { onContributionTargetChange($0) }
+                        ), axis: .vertical)
                     }
 
                     if let error = error {

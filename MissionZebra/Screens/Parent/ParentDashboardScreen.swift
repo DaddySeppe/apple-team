@@ -79,8 +79,12 @@ struct ParentDashboardScreen: View {
                 onTaskChildSelected: { viewModel.onTaskChildSelected($0) },
                 onNewTaskTitleChange: { viewModel.onNewTaskTitleChange($0) },
                 onNewTaskPointsChange: { viewModel.onNewTaskPointsChange($0) },
+                onNewTaskDueDateChange: { viewModel.onNewTaskDueDateChange($0) },
+                onNewTaskRepeatsWeeklyChange: { viewModel.onNewTaskRepeatsWeeklyChange($0) },
+                onNewTaskPurposeChange: { viewModel.onNewTaskPurposeChange($0) },
+                onNewTaskContributionTargetChange: { viewModel.onNewTaskContributionTargetChange($0) },
                 onAddTaskClick: { viewModel.addTask() },
-                onApproveTask: { viewModel.approveTask(taskId: $0) },
+                onApproveTask: { taskId, feedback in viewModel.approveTask(taskId: taskId, parentFeedback: feedback) },
                 onRejectTask: { viewModel.rejectTask(taskId: $0) },
                 onUpdateTask: { viewModel.updateTask(task: $0) },
                 onDeleteTask: { viewModel.deleteTask(taskId: $0) },
@@ -142,6 +146,12 @@ struct ParentDashboardScreen: View {
 
             if !viewModel.uiState.parentTip.isEmpty {
                 ParentTipCard(tip: viewModel.uiState.parentTip)
+            }
+
+            if let variant = viewModel.uiState.premiumNudgeVariant {
+                PremiumNudgeCard(variant: variant) {
+                    router.navigate(to: .parentPremiumDashboard)
+                }
             }
         }
         .padding(.horizontal, 20)
@@ -208,6 +218,58 @@ struct ParentDashboardScreen: View {
             snapshot.documents.forEach { batch.deleteDocument($0.reference) }
             try await batch.commit()
         }
+    }
+}
+
+private struct PremiumNudgeCard: View {
+    let variant: PremiumNudgeVariant
+    let onOpenPremium: () -> Void
+
+    private var title: String {
+        switch variant {
+        case .insights: return "Meer overzicht nodig?"
+        case .alerts: return "Slimme waarschuwingen"
+        case .ads: return "Premium zonder omwegen"
+        }
+    }
+
+    private var message: String {
+        switch variant {
+        case .insights:
+            return "Premium toont weektrends en gezinsinzichten zodra je meerdere kinderen opvolgt."
+        case .alerts:
+            return "Ontvang betere signalen wanneer taken en schermtijd aandacht vragen."
+        case .ads:
+            return "Houd beloningen en voortgang overzichtelijk met het premium dashboard."
+        }
+    }
+
+    var body: some View {
+        Button(action: onOpenPremium) {
+            HStack(alignment: .top, spacing: 12) {
+                Image(systemName: "sparkles")
+                    .font(.title3)
+                    .foregroundColor(.yellow)
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(title)
+                        .font(.headline)
+                    Text(message)
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                        .multilineTextAlignment(.leading)
+                }
+
+                Spacer()
+                Image(systemName: "chevron.right")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+            .padding(14)
+            .frame(maxWidth: .infinity)
+            .background(RoundedRectangle(cornerRadius: 12).fill(Color(.secondarySystemBackground)))
+        }
+        .buttonStyle(.plain)
     }
 }
 

@@ -30,12 +30,21 @@ class TaskFirebaseRepository: ObservableObject {
                 return MZTask(
                     id: doc.documentID,
                     title: data["title"] as? String ?? "",
-                    points: data["points"] as? Int ?? 0,
+                    points: Self.intValue(data["points"]),
                     childId: data["childId"] as? String,
+                    childName: data["childName"] as? String,
+                    parentId: data["parentId"] as? String,
                     pendingApproval: data["pendingApproval"] as? Bool ?? false,
                     completed: data["completed"] as? Bool ?? false,
                     dueDate: data["dueDate"] as? String,
-                    recurrence: data["recurrence"] as? String
+                    recurrence: data["recurrence"] as? String,
+                    purpose: data["purpose"] as? String ?? "",
+                    contributionTarget: data["contributionTarget"] as? String ?? "",
+                    childReflection: data["childReflection"] as? String ?? "",
+                    effortLevel: data["effortLevel"] as? String ?? "",
+                    parentFeedback: data["parentFeedback"] as? String ?? "",
+                    createdAt: Self.int64Value(data["createdAt"]),
+                    updatedAt: Self.int64Value(data["updatedAt"])
                 )
             }
 
@@ -77,18 +86,61 @@ class TaskFirebaseRepository: ObservableObject {
         }
     }
 
-    func addTask(title: String, points: Int, childId: String) async -> Result<Void, Error> {
+    func addTask(
+        title: String,
+        points: Int,
+        childId: String,
+        dueDate: String? = nil,
+        recurrence: String? = nil,
+        purpose: String = "",
+        contributionTarget: String = "",
+        isTutorial: Bool = false
+    ) async -> Result<Void, Error> {
         do {
             guard let collection = tasksCollection else {
                 throw NSError(domain: "", code: -1, userInfo: [NSLocalizedDescriptionKey: "Niet ingelogd"])
             }
-            _ = try await collection.addDocument(data: [
+            let now = Self.nowMillis()
+            var data: [String: Any] = [
                 "title": title,
                 "points": points,
                 "childId": childId,
                 "pendingApproval": false,
                 "completed": false,
-                "dueDate": Self.todayKey()
+                "dueDate": dueDate ?? Self.todayKey(),
+                "purpose": purpose,
+                "contributionTarget": contributionTarget,
+                "childReflection": "",
+                "effortLevel": "",
+                "parentFeedback": "",
+                "createdAt": now,
+                "updatedAt": now,
+                "isTutorial": isTutorial
+            ]
+            if let recurrence {
+                data["recurrence"] = recurrence
+            }
+            _ = try await collection.addDocument(data: data)
+            return .success(())
+        } catch {
+            return .failure(error)
+        }
+    }
+
+    func requestTaskCompletion(
+        taskId: String,
+        childReflection: String = "",
+        effortLevel: String = ""
+    ) async -> Result<Void, Error> {
+        do {
+            guard let collection = tasksCollection else {
+                throw NSError(domain: "", code: -1, userInfo: [NSLocalizedDescriptionKey: "Niet ingelogd"])
+            }
+            try await collection.document(taskId).updateData([
+                "pendingApproval": true,
+                "childReflection": childReflection,
+                "effortLevel": effortLevel,
+                "updatedAt": Self.nowMillis()
             ])
             return .success(())
         } catch {
@@ -96,19 +148,7 @@ class TaskFirebaseRepository: ObservableObject {
         }
     }
 
-    func requestTaskCompletion(taskId: String) async -> Result<Void, Error> {
-        do {
-            guard let collection = tasksCollection else {
-                throw NSError(domain: "", code: -1, userInfo: [NSLocalizedDescriptionKey: "Niet ingelogd"])
-            }
-            try await collection.document(taskId).updateData(["pendingApproval": true])
-            return .success(())
-        } catch {
-            return .failure(error)
-        }
-    }
-
-    func approveTask(taskId: String) async -> Result<Void, Error> {
+    func approveTask(taskId: String, parentFeedback: String = "") async -> Result<Void, Error> {
         do {
             guard let user = auth.currentUser else {
                 throw NSError(domain: "", code: -1, userInfo: [NSLocalizedDescriptionKey: "Niet ingelogd"])
@@ -120,18 +160,35 @@ class TaskFirebaseRepository: ObservableObject {
             let parentDoc = firestore.collection("parents").document(user.uid)
             let taskRef = collection.document(taskId)
             let snapshot = try await taskRef.getDocument()
-            let points = snapshot.data()?["points"] as? Int ?? 0
-            let childId = snapshot.data()?["childId"] as? String
+            let data = snapshot.data() ?? [:]
+            let points = Self.intValue(data["points"])
+            let childId = data["childId"] as? String
+            let recurrence = data["recurrence"] as? String
+            let dueDate = data["dueDate"] as? String
 
             if let childId = childId {
                 let childRef = parentDoc.collection("children").document(childId)
                 try await childRef.updateData(["points": FieldValue.increment(Int64(points))])
             }
 
-            try await taskRef.updateData([
-                "completed": true,
-                "pendingApproval": false
-            ])
+            if recurrence == MZTask.recurrenceWeekly {
+                try await taskRef.updateData([
+                    "completed": false,
+                    "pendingApproval": false,
+                    "dueDate": TaskOrdering.nextWeeklyDueDate(from: dueDate),
+                    "childReflection": "",
+                    "effortLevel": "",
+                    "parentFeedback": parentFeedback,
+                    "updatedAt": Self.nowMillis()
+                ])
+            } else {
+                try await taskRef.updateData([
+                    "completed": true,
+                    "pendingApproval": false,
+                    "parentFeedback": parentFeedback,
+                    "updatedAt": Self.nowMillis()
+                ])
+            }
             return .success(())
         } catch {
             return .failure(error)
@@ -145,7 +202,8 @@ class TaskFirebaseRepository: ObservableObject {
             }
             try await collection.document(taskId).updateData([
                 "pendingApproval": false,
-                "completed": false
+                "completed": false,
+                "updatedAt": Self.nowMillis()
             ])
             return .success(())
         } catch {
@@ -161,12 +219,22 @@ class TaskFirebaseRepository: ObservableObject {
             guard let collection = tasksCollection else {
                 throw NSError(domain: "", code: -1, userInfo: [NSLocalizedDescriptionKey: "Niet ingelogd"])
             }
+            let now = Self.nowMillis()
             var data: [String: Any] = [
                 "title": task.title,
                 "points": task.points,
                 "childId": task.childId as Any,
+                "childName": task.childName as Any,
+                "parentId": task.parentId as Any,
                 "pendingApproval": task.pendingApproval,
-                "completed": task.completed
+                "completed": task.completed,
+                "purpose": task.purpose,
+                "contributionTarget": task.contributionTarget,
+                "childReflection": task.childReflection,
+                "effortLevel": task.effortLevel,
+                "parentFeedback": task.parentFeedback,
+                "createdAt": task.createdAt > 0 ? task.createdAt : now,
+                "updatedAt": now
             ]
             data["dueDate"] = task.dueDate ?? FieldValue.delete()
             data["recurrence"] = task.recurrence ?? FieldValue.delete()
@@ -183,5 +251,23 @@ class TaskFirebaseRepository: ObservableObject {
         formatter.locale = Locale(identifier: "en_US_POSIX")
         formatter.dateFormat = "yyyy-MM-dd"
         return formatter.string(from: Date())
+    }
+
+    private static func nowMillis() -> Int64 {
+        Int64(Date().timeIntervalSince1970 * 1000)
+    }
+
+    private static func intValue(_ value: Any?) -> Int {
+        if let value = value as? Int { return value }
+        if let value = value as? Int64 { return Int(value) }
+        if let value = value as? NSNumber { return value.intValue }
+        return 0
+    }
+
+    private static func int64Value(_ value: Any?) -> Int64 {
+        if let value = value as? Int64 { return value }
+        if let value = value as? Int { return Int64(value) }
+        if let value = value as? NSNumber { return value.int64Value }
+        return 0
     }
 }

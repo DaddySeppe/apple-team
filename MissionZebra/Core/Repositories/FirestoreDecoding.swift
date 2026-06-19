@@ -15,6 +15,14 @@ enum FirestoreDecoding {
         return defaultValue
     }
 
+    static func int64(_ value: Any?, default defaultValue: Int64 = 0) -> Int64 {
+        if let value = value as? Int64 { return value }
+        if let value = value as? Int { return Int64(value) }
+        if let value = value as? Double { return Int64(value) }
+        if let value = value as? NSNumber { return value.int64Value }
+        return defaultValue
+    }
+
     static func intMap(_ value: Any?) -> [String: Int] {
         guard let raw = value as? [String: Any] else {
             return (value as? [String: Int]) ?? [:]

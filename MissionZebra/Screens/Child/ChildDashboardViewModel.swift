@@ -95,7 +95,7 @@ class ChildDashboardViewModel: ObservableObject {
                 calculatedStreak = 0
             }
 
-            await childrenRepository.updateStreak(childId: childId, newStreak: calculatedStreak, checkDate: today)
+            _ = await childrenRepository.updateStreak(childId: childId, newStreak: calculatedStreak, checkDate: today)
         }
     }
 
@@ -154,25 +154,40 @@ class ChildDashboardViewModel: ObservableObject {
     func checkAndSyncDeviceScreenTime() {
         Task {
             if !deviceUsageRepository.hasUsagePermission() {
+                _ = await childrenRepository.updateScreenTimePermission(childId: childId, granted: false)
                 await MainActor.run {
                     uiState.needsUsagePermission = true
                 }
             } else {
                 do {
-                    let minutes = await deviceUsageRepository.getTodayScreenTimeMinutes()
-                    await childrenRepository.updateDailyScreenTime(childId: childId, minutes: minutes)
+                    let snapshot = await deviceUsageRepository.getTodayUsageSnapshot()
+                    if snapshot.isWholeDeviceScreenTime {
+                        _ = await childrenRepository.updateDailyScreenTime(
+                            childId: childId,
+                            minutes: snapshot.minutes,
+                            source: snapshot.source.rawValue
+                        )
+                    } else {
+                        _ = await childrenRepository.updateAppForegroundUsage(
+                            childId: childId,
+                            minutes: snapshot.minutes,
+                            source: snapshot.source.rawValue
+                        )
+                    }
                     await MainActor.run {
-                        uiState.needsUsagePermission = false
+                        uiState.needsUsagePermission = !snapshot.isWholeDeviceScreenTime
                         uiState.error = nil
                     }
 
                     // Check screen time limit and send notification if needed
                     let limit = uiState.child?.dailyScreenTimeLimitMinutes ?? 60
-                    NotificationManager.shared.checkAndNotify(
-                        childName: childName,
-                        usedMinutes: minutes,
-                        limitMinutes: limit
-                    )
+                    if snapshot.isWholeDeviceScreenTime {
+                        NotificationManager.shared.checkAndNotify(
+                            childName: childName,
+                            usedMinutes: snapshot.minutes,
+                            limitMinutes: limit
+                        )
+                    }
                 }
             }
         }
@@ -182,9 +197,13 @@ class ChildDashboardViewModel: ObservableObject {
         uiState.needsUsagePermission = false
     }
 
-    func markTaskDone(taskId: String) {
+    func markTaskDone(taskId: String, childReflection: String, effortLevel: String) {
         Task {
-            let result = await tasksRepository.requestTaskCompletion(taskId: taskId)
+            let result = await tasksRepository.requestTaskCompletion(
+                taskId: taskId,
+                childReflection: childReflection,
+                effortLevel: effortLevel
+            )
             await MainActor.run {
                 if case .failure(let error) = result {
                     uiState.error = error.localizedDescription
@@ -248,7 +267,7 @@ class ChildDashboardViewModel: ObservableObject {
 
                 if realFocusMinutes > 0 {
                     let pointsEarned = realFocusMinutes * 2
-                    await childrenRepository.addPoints(childId: childId, pointsToAdd: pointsEarned)
+                    _ = await childrenRepository.addPoints(childId: childId, pointsToAdd: pointsEarned)
 
                     await MainActor.run {
                         uiState.focusSessionEarnedPoints = pointsEarned
@@ -274,6 +293,10 @@ class ChildDashboardViewModel: ObservableObject {
         return zebraShopRepository.availableAccessories
     }
 
+    var accessoriesByCategory: [ZebraCategory: [Accessory]] {
+        Dictionary(grouping: availableAccessories, by: { $0.category })
+    }
+
     func toggleShop(isOpen: Bool) {
         uiState.isShopOpen = isOpen
     }
@@ -293,5 +316,33 @@ class ChildDashboardViewModel: ObservableObject {
         Task {
             _ = await zebraShopRepository.equipAccessory(childId: childId, accessoryId: accessoryId)
         }
+    }
+
+    func equipCategoryItem(category: ZebraCategory, accessoryId: String?) {
+        Task {
+            let result = await zebraShopRepository.equipCategoryItem(
+                childId: childId,
+                category: category,
+                accessoryId: accessoryId
+            )
+            await MainActor.run {
+                if case .failure(let error) = result {
+                    uiState.error = error.localizedDescription
+                }
+            }
+        }
+    }
+
+    func accessoryEmoji(for child: Child?) -> String? {
+        guard let child else { return nil }
+        if let headItemId = child.equippedItems[ZebraCategory.HOOFD.rawValue],
+           let headAccessory = availableAccessories.first(where: { $0.id == headItemId }) {
+            return headAccessory.emoji
+        }
+        if let fallbackId = child.equippedAccessoryId,
+           let fallback = availableAccessories.first(where: { $0.id == fallbackId }) {
+            return fallback.emoji
+        }
+        return nil
     }
 }

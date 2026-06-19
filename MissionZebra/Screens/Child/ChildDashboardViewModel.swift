@@ -154,6 +154,7 @@ class ChildDashboardViewModel: ObservableObject {
     func checkAndSyncDeviceScreenTime() {
         Task {
             if !deviceUsageRepository.hasUsagePermission() {
+                _ = await childrenRepository.updateScreenTimePermission(childId: childId, granted: false)
                 await MainActor.run {
                     uiState.needsUsagePermission = true
                 }
@@ -182,9 +183,13 @@ class ChildDashboardViewModel: ObservableObject {
         uiState.needsUsagePermission = false
     }
 
-    func markTaskDone(taskId: String) {
+    func markTaskDone(taskId: String, childReflection: String, effortLevel: String) {
         Task {
-            let result = await tasksRepository.requestTaskCompletion(taskId: taskId)
+            let result = await tasksRepository.requestTaskCompletion(
+                taskId: taskId,
+                childReflection: childReflection,
+                effortLevel: effortLevel
+            )
             await MainActor.run {
                 if case .failure(let error) = result {
                     uiState.error = error.localizedDescription

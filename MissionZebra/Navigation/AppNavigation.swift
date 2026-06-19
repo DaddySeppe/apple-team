@@ -32,16 +32,20 @@ struct AppNavigation: View {
         let startDest = SessionManager.shared.getStartDestination()
         switch startDest {
         case "parentDashboard":
-            ParentDashboardScreen()
+            ParentRoute {
+                ParentDashboardScreen()
+            }
         case "childLogin":
             ChildLoginScreen()
         case let dest where dest.starts(with: "childDashboard/"):
             let parts = dest.split(separator: "/")
             if parts.count >= 3 {
-                ChildDashboardScreen(
-                    childId: String(parts[1]),
-                    childName: String(parts[2])
-                )
+                ChildDashboardRoute {
+                    ChildDashboardScreen(
+                        childId: String(parts[1]),
+                        childName: String(parts[2])
+                    )
+                }
             } else {
                 WelcomeScreen()
             }
@@ -58,24 +62,141 @@ struct AppNavigation: View {
         case .parentLogin:
             ParentLoginScreen()
         case .deviceMode:
-            DeviceModeScreen()
+            ParentRoute {
+                DeviceModeScreen()
+            }
         case .parentDashboard:
-            ParentDashboardScreen()
+            ParentRoute {
+                ParentDashboardScreen()
+            }
         case .childLogin:
             ChildLoginScreen()
         case .parentPremiumDashboard:
-            ParentPremiumDashboardScreen()
+            ParentRoute {
+                ParentPremiumDashboardScreen()
+            }
         case .parentScreenTimeControl:
-            ParentScreenTimeControlScreen()
+            ParentRoute {
+                ParentScreenTimeControlScreen()
+            }
         case .privacyPolicy:
             PrivacyPolicyScreen()
         case .parentOnlineSafety:
-            ParentOnlineSafetyScreen()
+            ParentRoute {
+                ParentOnlineSafetyScreen()
+            }
         case .taskCalendar:
-            TaskCalendarScreen()
+            ParentRoute {
+                TaskCalendarScreen()
+            }
         case .childDashboard(let childId, let childName):
-            ChildDashboardScreen(childId: childId, childName: childName)
+            ChildDashboardRoute {
+                ChildDashboardScreen(childId: childId, childName: childName)
+            }
         }
+    }
+}
+
+struct ParentRoute<Content: View>: View {
+    @EnvironmentObject private var router: NavigationRouter
+    @State private var isRefreshingPinState = false
+    @State private var attemptedRemotePinRefresh = false
+    @State private var remotePinConfigured = false
+    let content: Content
+
+    init(@ViewBuilder content: () -> Content) {
+        self.content = content()
+    }
+
+    private var hasFirebaseUser: Bool {
+        SessionManager.shared.getRoleSession().firebaseUid != nil
+    }
+
+    private var allowed: Bool {
+        SessionManager.shared.getRoleSession().isParent &&
+            (ParentPinManager.shared.hasParentPin() || remotePinConfigured)
+    }
+
+    private var redirect: RouteRedirect? {
+        RouteGuardPolicy.parentRedirect(
+            session: SessionManager.shared.getRoleSession(),
+            hasParentPin: ParentPinManager.shared.hasParentPin() || remotePinConfigured
+        )
+    }
+
+    var body: some View {
+        Group {
+            if allowed {
+                content
+            } else if isRefreshingPinState {
+                ProgressView()
+                    .task { await refreshPinState() }
+            } else {
+                Color.clear
+                    .task { await redirectIfNeeded() }
+            }
+        }
+    }
+
+    @MainActor
+    private func refreshPinState() async {
+        remotePinConfigured = await ParentPinManager.shared.refreshParentPinConfigured()
+        attemptedRemotePinRefresh = true
+        isRefreshingPinState = false
+        if !allowed {
+            await redirectIfNeeded()
+        }
+    }
+
+    @MainActor
+    private func redirectIfNeeded() async {
+        if redirect == nil { return }
+        if hasFirebaseUser && !attemptedRemotePinRefresh && !isRefreshingPinState {
+            isRefreshingPinState = true
+            await refreshPinState()
+            return
+        }
+        router.goToRoot()
+        router.navigate(to: redirect == .parentLogin ? .parentLogin : .welcome)
+    }
+}
+
+struct ChildDashboardRoute<Content: View>: View {
+    @EnvironmentObject private var router: NavigationRouter
+    let content: Content
+
+    init(@ViewBuilder content: () -> Content) {
+        self.content = content()
+    }
+
+    private var hasFirebaseUser: Bool {
+        SessionManager.shared.getRoleSession().firebaseUid != nil
+    }
+
+    private var allowed: Bool {
+        SessionManager.shared.getRoleSession().isChild
+    }
+
+    private var redirect: RouteRedirect? {
+        RouteGuardPolicy.childDashboardRedirect(session: SessionManager.shared.getRoleSession())
+    }
+
+    var body: some View {
+        Group {
+            if allowed {
+                content
+            } else {
+                Color.clear
+                    .task { redirectIfNeeded() }
+            }
+        }
+    }
+
+    @MainActor
+    private func redirectIfNeeded() {
+        guard let redirect else { return }
+        router.goToRoot()
+        router.navigate(to: redirect == .childLogin ? .childLogin : .welcome)
     }
 }
 

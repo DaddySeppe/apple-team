@@ -29,9 +29,16 @@ class ParentChildrenFirebaseRepository: ObservableObject {
                 let name = data["name"] as? String ?? ""
                 let points = data["points"] as? Int ?? 0
 
-                let usedMinutes = (data["dailyScreenTimeUsedMinutes"] as? Int)
+                let storedUsedMinutes = (data["dailyScreenTimeUsedMinutes"] as? Int)
                     ?? (data["screenTimeUsedMinutes"] as? Int)
                     ?? 0
+                let deviceScreenTimes = Self.intMap(data["deviceScreenTimes"])
+                let deviceScreenTimeDates = data["deviceScreenTimeDates"] as? [String: String] ?? [:]
+                let today = Self.todayKey()
+                let aggregateDeviceMinutes = deviceScreenTimes.reduce(0) { partial, entry in
+                    deviceScreenTimeDates[entry.key] == today ? partial + entry.value : partial
+                }
+                let usedMinutes = max(storedUsedMinutes, aggregateDeviceMinutes)
 
                 let limitMinutes = (data["dailyScreenTimeLimitMinutes"] as? Int)
                     ?? (data["screenTimeLimitMinutes"] as? Int)
@@ -61,7 +68,11 @@ class ParentChildrenFirebaseRepository: ObservableObject {
                     streak: data["streak"] as? Int ?? 0,
                     lastStreakCheckDate: data["lastStreakCheckDate"] as? String,
                     motivationalMessage: data["motivationalMessage"] as? String,
-                    screenTimeHistory: history
+                    screenTimeHistory: history,
+                    deviceScreenTimes: deviceScreenTimes,
+                    deviceNames: data["deviceNames"] as? [String: String] ?? [:],
+                    deviceScreenTimeDates: deviceScreenTimeDates,
+                    screenTimePermissionGranted: data["screenTimePermissionGranted"] as? Bool
                 )
             }
 
@@ -193,11 +204,29 @@ class ParentChildrenFirebaseRepository: ObservableObject {
             }
             let childRef = childrenCollection(user.uid).document(childId)
             let dateKey = Self.todayKey()
+            let deviceSession = SessionManager.shared.getDeviceSession()
 
             try await childRef.updateData([
                 "dailyScreenTimeUsedMinutes": minutes,
-                "screenTimeHistory.\(dateKey)": minutes
+                "screenTimeHistory.\(dateKey)": minutes,
+                "deviceScreenTimes.\(deviceSession.deviceId)": minutes,
+                "deviceNames.\(deviceSession.deviceId)": deviceSession.deviceName,
+                "deviceScreenTimeDates.\(deviceSession.deviceId)": dateKey,
+                "screenTimePermissionGranted": true
             ])
+            return .success(())
+        } catch {
+            return .failure(error)
+        }
+    }
+
+    func updateScreenTimePermission(childId: String, granted: Bool) async -> Result<Void, Error> {
+        do {
+            guard let user = auth.currentUser else {
+                throw NSError(domain: "", code: -1, userInfo: [NSLocalizedDescriptionKey: "Niet ingelogd"])
+            }
+            try await childrenCollection(user.uid).document(childId)
+                .updateData(["screenTimePermissionGranted": granted])
             return .success(())
         } catch {
             return .failure(error)
@@ -221,5 +250,18 @@ class ParentChildrenFirebaseRepository: ObservableObject {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd"
         return formatter.string(from: Date())
+    }
+
+    private static func intMap(_ value: Any?) -> [String: Int] {
+        let raw = value as? [String: Any] ?? [:]
+        var result: [String: Int] = [:]
+        for (key, value) in raw {
+            if let intValue = value as? Int {
+                result[key] = intValue
+            } else if let numberValue = value as? NSNumber {
+                result[key] = numberValue.intValue
+            }
+        }
+        return result
     }
 }

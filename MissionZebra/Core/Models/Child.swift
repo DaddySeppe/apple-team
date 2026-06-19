@@ -17,4 +17,29 @@ struct Child: Identifiable, Codable, Equatable {
     var motivationalMessage: String? = nil
 
     var screenTimeHistory: [String: Int] = [:]
+    var deviceScreenTimes: [String: Int] = [:]
+    var deviceNames: [String: String] = [:]
+    var deviceScreenTimeDates: [String: String] = [:]
+    var screenTimePermissionGranted: Bool? = nil
+}
+
+enum ChildScreenTimeStatus {
+    case ok
+    case nearLimit
+    case overLimit
+    case blocked
+    case notTracked
+}
+
+extension Child {
+    var screenTimeStatus: ChildScreenTimeStatus {
+        if isBlocked { return .blocked }
+        if screenTimePermissionGranted == false { return .notTracked }
+        if dailyScreenTimeLimitMinutes <= 0 { return .ok }
+
+        let ratio = Float(dailyScreenTimeUsedMinutes) / Float(dailyScreenTimeLimitMinutes)
+        if ratio >= 1 { return .overLimit }
+        if ratio >= 0.8 { return .nearLimit }
+        return .ok
+    }
 }

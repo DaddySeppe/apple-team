@@ -29,8 +29,12 @@ struct TasksPage: View {
     let onTaskChildSelected: (String) -> Void
     let onNewTaskTitleChange: (String) -> Void
     let onNewTaskPointsChange: (String) -> Void
+    let onNewTaskDueDateChange: (Date) -> Void
+    let onNewTaskRepeatsWeeklyChange: (Bool) -> Void
+    let onNewTaskPurposeChange: (String) -> Void
+    let onNewTaskContributionTargetChange: (String) -> Void
     let onAddTaskClick: () -> Void
-    let onApproveTask: (String) -> Void
+    let onApproveTask: (String, String) -> Void
     let onRejectTask: (String) -> Void
     let onUpdateTask: (MZTask) -> Void
     let onDeleteTask: (String) -> Void
@@ -39,26 +43,14 @@ struct TasksPage: View {
     @State private var sortOption: TaskSortOption = .dateDesc
     @State private var filterStatus: TaskFilterStatus = .all
     @State private var showAddTaskDialog = false
+    @State private var wasSavingTask = false
 
     private var filteredTasks: [MZTask] {
-        uiState.tasks.filter { task in
-            switch filterStatus {
-            case .all: return true
-            case .pending: return task.pendingApproval
-            case .completed: return task.completed
-            case .active: return !task.completed && !task.pendingApproval
-            }
-        }
+        TaskOrdering.filter(uiState.tasks, by: filterStatus)
     }
 
     private var sortedTasks: [MZTask] {
-        switch sortOption {
-        case .pointsDesc: return filteredTasks.sorted { $0.points > $1.points }
-        case .pointsAsc: return filteredTasks.sorted { $0.points < $1.points }
-        case .titleAsc: return filteredTasks.sorted { $0.title < $1.title }
-        case .dateDesc: return filteredTasks.sorted { $0.pendingApproval && !$1.pendingApproval }
-        case .dateAsc: return filteredTasks.sorted { !$0.pendingApproval && $1.pendingApproval }
-        }
+        TaskOrdering.sort(filteredTasks, by: sortOption)
     }
 
     var body: some View {
@@ -105,7 +97,7 @@ struct TasksPage: View {
                             ParentTaskCard(
                                 task: task,
                                 children: uiState.children,
-                                onApprove: { onApproveTask(task.id) },
+                                onApprove: { feedback in onApproveTask(task.id, feedback) },
                                 onReject: { onRejectTask(task.id) },
                                 onUpdateTask: onUpdateTask,
                                 onDeleteTask: onDeleteTask
@@ -135,14 +127,28 @@ struct TasksPage: View {
                 selectedChildId: uiState.selectedTaskChildId,
                 title: uiState.newTaskTitle,
                 points: uiState.newTaskPoints,
+                dueDate: uiState.newTaskDueDate,
+                repeatsWeekly: uiState.newTaskRepeatsWeekly,
+                purpose: uiState.newTaskPurpose,
+                contributionTarget: uiState.newTaskContributionTarget,
                 isSaving: uiState.isSavingTask,
                 error: uiState.taskError,
                 onChildSelected: onTaskChildSelected,
                 onTitleChange: onNewTaskTitleChange,
                 onPointsChange: onNewTaskPointsChange,
+                onDueDateChange: onNewTaskDueDateChange,
+                onRepeatsWeeklyChange: onNewTaskRepeatsWeeklyChange,
+                onPurposeChange: onNewTaskPurposeChange,
+                onContributionTargetChange: onNewTaskContributionTargetChange,
                 onAddClick: onAddTaskClick,
                 onDismiss: { showAddTaskDialog = false }
             )
+        }
+        .onChange(of: uiState.isSavingTask) { isSaving in
+            if wasSavingTask && !isSaving && uiState.taskError == nil {
+                showAddTaskDialog = false
+            }
+            wasSavingTask = isSaving
         }
     }
 }
@@ -206,13 +212,15 @@ struct TasksFilterSection: View {
 struct ParentTaskCard: View {
     let task: MZTask
     let children: [Child]
-    let onApprove: () -> Void
+    let onApprove: (String) -> Void
     let onReject: () -> Void
     let onUpdateTask: (MZTask) -> Void
     let onDeleteTask: (String) -> Void
 
     @State private var showEditDialog = false
     @State private var showDeleteDialog = false
+    @State private var showFeedbackDialog = false
+    @State private var parentFeedback = ""
 
     private var childName: String {
         children.first(where: { $0.id == task.childId })?.name ?? "Onbekend"
@@ -221,7 +229,21 @@ struct ParentTaskCard: View {
     private var statusColor: Color {
         if task.completed { return .accentColor }
         if task.pendingApproval { return .red }
+        if TaskOrdering.displayStatus(task) == .expired { return .orange }
         return .secondary
+    }
+
+    private var statusText: String? {
+        switch TaskOrdering.displayStatus(task) {
+        case .pendingApproval:
+            return "Wacht op goedkeuring"
+        case .expired:
+            return "Verlopen"
+        case .completed:
+            return "Voltooid"
+        case .active:
+            return nil
+        }
     }
 
     var body: some View {
@@ -241,11 +263,21 @@ struct ParentTaskCard: View {
                         HStack(spacing: 8) {
                             Text(childName)
                                 .font(.caption)
-                            if task.pendingApproval {
-                                Text("• Wacht op goedkeuring")
+                            if let statusText {
+                                Text("• \(statusText)")
                                     .font(.caption)
                                     .fontWeight(.bold)
                                     .foregroundColor(statusColor)
+                            }
+                            if let dueDate = task.dueDate {
+                                Text("• \(dueDate)")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            }
+                            if task.recurrence == MZTask.recurrenceWeekly {
+                                Text("• Wekelijks")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
                             }
                         }
                     }
@@ -277,7 +309,9 @@ struct ParentTaskCard: View {
                             .foregroundColor(.red)
                             .buttonStyle(.bordered)
 
-                        Button("Goedkeuren", action: onApprove)
+                        Button("Goedkeuren") {
+                            showFeedbackDialog = true
+                        }
                             .font(.caption)
                             .buttonStyle(.borderedProminent)
                     }
@@ -305,6 +339,16 @@ struct ParentTaskCard: View {
                 onDeleteTask(task.id)
             }
             Button("Annuleren", role: .cancel) {}
+        }
+        .alert("Feedback voor \(childName)", isPresented: $showFeedbackDialog) {
+            TextField("Bijv. Mooi volgehouden!", text: $parentFeedback)
+            Button("Goedkeuren") {
+                onApprove(parentFeedback.trimmingCharacters(in: .whitespacesAndNewlines))
+                parentFeedback = ""
+            }
+            Button("Annuleren", role: .cancel) {}
+        } message: {
+            Text("Optioneel bericht voor deze taak.")
         }
     }
 }

@@ -367,7 +367,8 @@ struct ParentLoginScreen: View {
         }
 
         firestore.collection("parents").document(user.uid).getDocument { snapshot, err in
-            if let data = snapshot?.data(), data["pinHash"] != nil {
+            if let data = snapshot?.data(),
+               data["pinHash"] != nil || data["parentPinConfigured"] as? Bool == true {
                 fetchPinAndContinue()
             } else {
                 showPinSetup = true
@@ -422,7 +423,8 @@ struct ParentLoginScreen: View {
 
             firestore.collection("parents").document(user.uid).setData([
                 "pinHash": hash,
-                "pinSalt": salt
+                "pinSalt": salt,
+                "parentPinConfigured": true
             ], merge: true) { err in
                 if let err = err {
                     pinError = err.localizedDescription

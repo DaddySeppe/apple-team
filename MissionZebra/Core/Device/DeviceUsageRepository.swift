@@ -9,6 +9,12 @@ import UIKit
 /// This tracks MissionZebra foreground usage and exposes FamilyControls
 /// authorization when the entitlement is present.
 class DeviceUsageRepository: ObservableObject {
+    enum UsageSource {
+        case deviceActivity
+        case appForegroundFallback
+        case unavailable
+    }
+
     private let defaults = UserDefaults(suiteName: "missionzebra_device_usage") ?? .standard
     private let activeStartKey = "active_start_millis"
     private let dailyUsagePrefix = "daily_usage_minutes_"
@@ -33,11 +39,20 @@ class DeviceUsageRepository: ObservableObject {
         #if canImport(FamilyControls)
         return AuthorizationCenter.shared.authorizationStatus == .approved
         #else
-        return true
+        return false
         #endif
     }
 
-    /// Get today's total screen time in minutes
+    var usageSource: UsageSource {
+        #if canImport(FamilyControls)
+        return hasUsagePermission() ? .deviceActivity : .appForegroundFallback
+        #else
+        return .unavailable
+        #endif
+    }
+
+    /// Returns whole-device Screen Time only when DeviceActivity data is available.
+    /// Otherwise this is a labeled MissionZebra foreground fallback, not full device usage.
     func getTodayScreenTimeMinutes() async -> Int {
         flushActiveSession()
         return defaults.integer(forKey: dailyUsageKey(for: Date()))

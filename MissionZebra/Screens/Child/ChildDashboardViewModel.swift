@@ -95,7 +95,7 @@ class ChildDashboardViewModel: ObservableObject {
                 calculatedStreak = 0
             }
 
-            await childrenRepository.updateStreak(childId: childId, newStreak: calculatedStreak, checkDate: today)
+            _ = await childrenRepository.updateStreak(childId: childId, newStreak: calculatedStreak, checkDate: today)
         }
     }
 
@@ -160,20 +160,34 @@ class ChildDashboardViewModel: ObservableObject {
                 }
             } else {
                 do {
-                    let minutes = await deviceUsageRepository.getTodayScreenTimeMinutes()
-                    await childrenRepository.updateDailyScreenTime(childId: childId, minutes: minutes)
+                    let snapshot = await deviceUsageRepository.getTodayUsageSnapshot()
+                    if snapshot.isWholeDeviceScreenTime {
+                        _ = await childrenRepository.updateDailyScreenTime(
+                            childId: childId,
+                            minutes: snapshot.minutes,
+                            source: snapshot.source.rawValue
+                        )
+                    } else {
+                        _ = await childrenRepository.updateAppForegroundUsage(
+                            childId: childId,
+                            minutes: snapshot.minutes,
+                            source: snapshot.source.rawValue
+                        )
+                    }
                     await MainActor.run {
-                        uiState.needsUsagePermission = false
+                        uiState.needsUsagePermission = !snapshot.isWholeDeviceScreenTime
                         uiState.error = nil
                     }
 
                     // Check screen time limit and send notification if needed
                     let limit = uiState.child?.dailyScreenTimeLimitMinutes ?? 60
-                    NotificationManager.shared.checkAndNotify(
-                        childName: childName,
-                        usedMinutes: minutes,
-                        limitMinutes: limit
-                    )
+                    if snapshot.isWholeDeviceScreenTime {
+                        NotificationManager.shared.checkAndNotify(
+                            childName: childName,
+                            usedMinutes: snapshot.minutes,
+                            limitMinutes: limit
+                        )
+                    }
                 }
             }
         }
@@ -253,7 +267,7 @@ class ChildDashboardViewModel: ObservableObject {
 
                 if realFocusMinutes > 0 {
                     let pointsEarned = realFocusMinutes * 2
-                    await childrenRepository.addPoints(childId: childId, pointsToAdd: pointsEarned)
+                    _ = await childrenRepository.addPoints(childId: childId, pointsToAdd: pointsEarned)
 
                     await MainActor.run {
                         uiState.focusSessionEarnedPoints = pointsEarned

@@ -182,7 +182,7 @@ class ParentChildrenFirebaseRepository: ObservableObject {
             }
             let childRef = childrenCollection(user.uid).document(childId)
 
-            try await firestore.runTransaction { transaction, errorPointer in
+            _ = try await firestore.runTransaction { transaction, errorPointer in
                 let snapshot: DocumentSnapshot
                 do {
                     snapshot = try transaction.getDocument(childRef)
@@ -200,7 +200,7 @@ class ParentChildrenFirebaseRepository: ObservableObject {
         }
     }
 
-    func updateDailyScreenTime(childId: String, minutes: Int) async -> Result<Void, Error> {
+    func updateDailyScreenTime(childId: String, minutes: Int, source: String = "DEVICE_ACTIVITY") async -> Result<Void, Error> {
         do {
             guard let user = auth.currentUser else {
                 throw NSError(domain: "", code: -1, userInfo: [NSLocalizedDescriptionKey: "Niet ingelogd"])
@@ -215,8 +215,29 @@ class ParentChildrenFirebaseRepository: ObservableObject {
                 "deviceScreenTimes.\(deviceSession.deviceId)": minutes,
                 "deviceNames.\(deviceSession.deviceId)": deviceSession.deviceName,
                 "deviceScreenTimeDates.\(deviceSession.deviceId)": dateKey,
+                "screenTimeSource": source,
                 "screenTimePermissionGranted": true
             ])
+            return .success(())
+        } catch {
+            return .failure(error)
+        }
+    }
+
+    func updateAppForegroundUsage(childId: String, minutes: Int, source: String) async -> Result<Void, Error> {
+        do {
+            guard let user = auth.currentUser else {
+                throw NSError(domain: "", code: -1, userInfo: [NSLocalizedDescriptionKey: "Niet ingelogd"])
+            }
+            let deviceSession = SessionManager.shared.getDeviceSession()
+            try await childrenCollection(user.uid).document(childId).setData([
+                "appForegroundUsageMinutes": minutes,
+                "appForegroundUsageDeviceId": deviceSession.deviceId,
+                "appForegroundUsageDeviceName": deviceSession.deviceName,
+                "appForegroundUsageDate": Self.todayKey(),
+                "screenTimeSource": source,
+                "screenTimePermissionGranted": false
+            ], merge: true)
             return .success(())
         } catch {
             return .failure(error)

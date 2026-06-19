@@ -13,11 +13,29 @@ class DeviceUsageRepository: ObservableObject {
         case deviceActivity
         case appForegroundFallback
         case unavailable
+
+        var rawValue: String {
+            switch self {
+            case .deviceActivity: return "DEVICE_ACTIVITY"
+            case .appForegroundFallback: return "APP_FOREGROUND_FALLBACK"
+            case .unavailable: return "UNAVAILABLE"
+            }
+        }
+    }
+
+    struct UsageSnapshot {
+        let minutes: Int
+        let source: UsageSource
+
+        var isWholeDeviceScreenTime: Bool {
+            source == .deviceActivity
+        }
     }
 
     private let defaults = UserDefaults(suiteName: "missionzebra_device_usage") ?? .standard
     private let activeStartKey = "active_start_millis"
     private let dailyUsagePrefix = "daily_usage_minutes_"
+    private let deviceActivityUsagePrefix = "device_activity_minutes_"
 
     init() {
         NotificationCenter.default.addObserver(
@@ -54,8 +72,20 @@ class DeviceUsageRepository: ObservableObject {
     /// Returns whole-device Screen Time only when DeviceActivity data is available.
     /// Otherwise this is a labeled MissionZebra foreground fallback, not full device usage.
     func getTodayScreenTimeMinutes() async -> Int {
+        let snapshot = await getTodayUsageSnapshot()
+        return snapshot.minutes
+    }
+
+    func getTodayUsageSnapshot() async -> UsageSnapshot {
         flushActiveSession()
-        return defaults.integer(forKey: dailyUsageKey(for: Date()))
+        let today = Date()
+        let deviceActivityMinutes = defaults.integer(forKey: deviceActivityUsageKey(for: today))
+        if hasUsagePermission(), deviceActivityMinutes > 0 {
+            return UsageSnapshot(minutes: deviceActivityMinutes, source: .deviceActivity)
+        }
+
+        let fallbackMinutes = defaults.integer(forKey: dailyUsageKey(for: today))
+        return UsageSnapshot(minutes: fallbackMinutes, source: fallbackMinutes > 0 ? .appForegroundFallback : usageSource)
     }
 
     private func markActive() {
@@ -84,5 +114,13 @@ class DeviceUsageRepository: ObservableObject {
         formatter.locale = Locale(identifier: "en_US_POSIX")
         formatter.dateFormat = "yyyy-MM-dd"
         return dailyUsagePrefix + formatter.string(from: date)
+    }
+
+    private func deviceActivityUsageKey(for date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.calendar = Calendar(identifier: .gregorian)
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.dateFormat = "yyyy-MM-dd"
+        return deviceActivityUsagePrefix + formatter.string(from: date)
     }
 }

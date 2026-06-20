@@ -29,7 +29,7 @@ final class PremiumPurchaseManager: ObservableObject {
         do {
             product = try await Product.products(for: [Self.premiumMonthlyProductId]).first
             if product == nil {
-                errorMessage = "Premium product niet gevonden in StoreKit."
+                errorMessage = "Premium product niet gevonden in StoreKit. Controleer App Store Connect metadata of selecteer MissionZebra.storekit in het Run scheme."
             }
         } catch {
             errorMessage = error.localizedDescription

@@ -107,6 +107,7 @@ schemes:
         MissionZebra: all
     run:
       config: Debug
+      storeKitConfiguration: MissionZebra/MissionZebra.storekit
     test:
       config: Debug
       targets:

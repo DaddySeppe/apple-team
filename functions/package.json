@@ -1,0 +1,19 @@
+{
+  "name": "missionzebra-ios-functions",
+  "private": true,
+  "main": "index.js",
+  "engines": {
+    "node": "22"
+  },
+  "scripts": {
+    "lint": "node --check index.js"
+  },
+  "dependencies": {
+    "@apple/app-store-server-library": "^3.1.0",
+    "firebase-admin": "^13.10.0",
+    "firebase-functions": "^7.2.5"
+  },
+  "overrides": {
+    "uuid": "11.1.1"
+  }
+}

@@ -1,0 +1,72 @@
+{
+  "identifier" : "D94D4B4A-6E08-4E6B-9E3B-B12BBF4477E2",
+  "nonRenewingSubscriptions" : [
+
+  ],
+  "products" : [
+
+  ],
+  "settings" : {
+    "_applicationInternalID" : "",
+    "_developerTeamID" : "",
+    "_failTransactionsEnabled" : false,
+    "_lastSynchronizedDate" : 771638400,
+    "_locale" : "nl_BE",
+    "_storefront" : "BEL",
+    "_storeKitErrors" : [
+
+    ],
+    "_timeRate" : 1
+  },
+  "subscriptionGroups" : [
+    {
+      "id" : "A78534E8",
+      "localizations" : [
+        {
+          "locale" : "nl_BE",
+          "name" : "MissionZebra Premium"
+        },
+        {
+          "locale" : "en_US",
+          "name" : "MissionZebra Premium"
+        }
+      ],
+      "name" : "MissionZebra Premium",
+      "subscriptions" : [
+        {
+          "adHocOffers" : [
+
+          ],
+          "codeOffers" : [
+
+          ],
+          "displayPrice" : "4.99",
+          "familyShareable" : false,
+          "groupNumber" : 1,
+          "internalID" : "6782354086",
+          "introductoryOffer" : null,
+          "localizations" : [
+            {
+              "description" : "Ontgrendel gezinsinzichten, slimme waarschuwingen en kalender-sync.",
+              "displayName" : "MissionZebra Premium Monthly",
+              "locale" : "nl_BE"
+            },
+            {
+              "description" : "Unlock family insights, smart alerts, and calendar sync.",
+              "displayName" : "MissionZebra Premium Monthly",
+              "locale" : "en_US"
+            }
+          ],
+          "productID" : "premium_monthly",
+          "recurringSubscriptionPeriod" : "P1M",
+          "referenceName" : "MissionZebra Premium Monthly",
+          "subscriptionGroupID" : "A78534E8"
+        }
+      ]
+    }
+  ],
+  "version" : {
+    "major" : 4,
+    "minor" : 0
+  }
+}

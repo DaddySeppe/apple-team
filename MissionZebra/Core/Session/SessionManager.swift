@@ -32,6 +32,9 @@ class SessionManager {
         let d = defaults()
         d.set(true, forKey: keyIsLoggedIn)
         d.set(SessionManager.roleParent, forKey: keyRole)
+        d.set(false, forKey: keyDeviceForChild)
+        d.set(false, forKey: keySharedChildDevice)
+        d.set(true, forKey: keyDeviceModeConfigured)
         d.removeObject(forKey: keyChildId)
         d.removeObject(forKey: keyChildName)
         d.removeObject(forKey: keyChildSelectedAtMillis)
@@ -47,6 +50,8 @@ class SessionManager {
 
         d.set(true, forKey: keyIsLoggedIn)
         d.set(SessionManager.roleChild, forKey: keyRole)
+        d.set(true, forKey: keyDeviceForChild)
+        d.set(true, forKey: keyDeviceModeConfigured)
         d.set(childId, forKey: keyChildId)
         d.set(childName, forKey: keyChildName)
         d.set(selectedAt, forKey: keyChildSelectedAtMillis)
@@ -70,6 +75,30 @@ class SessionManager {
         d.set(forChild, forKey: keyDeviceForChild)
         d.set(false, forKey: keySharedChildDevice)
         d.set(true, forKey: keyDeviceModeConfigured)
+    }
+
+    func openChildModeFromParent() {
+        let d = defaults()
+        d.set(true, forKey: keyIsLoggedIn)
+        d.set(SessionManager.roleParent, forKey: keyRole)
+        d.set(true, forKey: keyDeviceForChild)
+        d.set(false, forKey: keySharedChildDevice)
+        d.set(true, forKey: keyDeviceModeConfigured)
+        d.removeObject(forKey: keyChildId)
+        d.removeObject(forKey: keyChildName)
+        d.removeObject(forKey: keyChildSelectedAtMillis)
+    }
+
+    func openSharedChildModeFromParent() {
+        let d = defaults()
+        d.set(true, forKey: keyIsLoggedIn)
+        d.set(SessionManager.roleParent, forKey: keyRole)
+        d.set(true, forKey: keyDeviceForChild)
+        d.set(true, forKey: keySharedChildDevice)
+        d.set(true, forKey: keyDeviceModeConfigured)
+        d.removeObject(forKey: keyChildId)
+        d.removeObject(forKey: keyChildName)
+        d.removeObject(forKey: keyChildSelectedAtMillis)
     }
 
     func isDeviceForChild() -> Bool {
@@ -125,11 +154,11 @@ class SessionManager {
     }
 
     func hasParentSession() -> Bool {
-        getRoleSession().isParent
+        getRoleSession().isParentLocally
     }
 
     func hasChildSession() -> Bool {
-        getRoleSession().isChild
+        getRoleSession().isChildLocally
     }
 
     func getRoleSession() -> RoleSession {
@@ -161,8 +190,9 @@ class SessionManager {
             return "childLogin"
         }
 
-        // 1) Als iemand ingelogd is EN Firebase ook nog een user heeft: laat die rol winnen
-        if roleSession.isLoggedIn, let role = roleSession.role, firebaseUser != nil {
+        // 1) Als lokaal een rol actief is: laat die rol winnen. De route guard
+        // wacht kort op Firebase Auth, zodat appstart niet voelt als random uitloggen.
+        if roleSession.isLoggedIn, let role = roleSession.role {
             switch role {
             case SessionManager.roleParent:
                 return "parentDashboard"
@@ -179,12 +209,7 @@ class SessionManager {
             }
         }
 
-        // 2) Als SharedPreferences zegt ingelogd maar Firebase-user is weg: verouderde sessie opruimen
-        if roleSession.isLoggedIn && firebaseUser == nil {
-            clearSession()
-        }
-
-        // 3) Niemand ingelogd: alleen naar childLogin als er ook echt een Firebase-user is
+        // 2) Niemand ingelogd: alleen naar childLogin als er ook echt een Firebase-user is
         if deviceSession.isDeviceForChild && firebaseUser != nil {
             return "childLogin"
         } else {

@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 77;
+	objectVersion = 63;
 	objects = {
 
 /* Begin PBXBuildFile section */
@@ -20,7 +20,9 @@
 		2260F14CD7A3D8D8BBE0D123 /* ApplePremiumVerificationRequest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 90E46805DDF1305239CFCDFD /* ApplePremiumVerificationRequest.swift */; };
 		2644472BB93472AA934AFD46 /* TasksTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = 711EF956267E1A2FB115D78A /* TasksTab.swift */; };
 		278BFA13746A5D5F024327CA /* PinSecurity.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BA5AB0DEBC1CD2D5CA2390F /* PinSecurity.swift */; };
+		2AADFB2E101F34DD393A0A74 /* MissionZebraAds.swift in Sources */ = {isa = PBXBuildFile; fileRef = 820AE25A4E8CBAE720B9AF4E /* MissionZebraAds.swift */; };
 		2C3DBE8A501DBA3DF9CEFE49 /* PinLockoutPolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = 309F13A1281219138F9721EF /* PinLockoutPolicy.swift */; };
+		2E10D98EE1865F0D33459DA0 /* ButtonStyles.swift in Sources */ = {isa = PBXBuildFile; fileRef = 16EFF0AC5EE507892E389422 /* ButtonStyles.swift */; };
 		30971443809CF697B0445939 /* ChildrenTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02E90198D4DBED46D817B619 /* ChildrenTab.swift */; };
 		3223A86DB7E4D16E9FC6A309 /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = 3EC4931B4754F131671A446D /* FirebaseAuth */; };
 		323A1FC1AB2A584338978DE6 /* ParentOnlineSafetyScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9D8530F962FA6A2C3A66277 /* ParentOnlineSafetyScreen.swift */; };
@@ -41,6 +43,7 @@
 		50C11D009CBDECD313B00B4C /* Backgrounds.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3E182D346585A8E925C154D1 /* Backgrounds.swift */; };
 		516190CC7773A8B2E15B4969 /* ParentPinManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E836588392B2258828004B3 /* ParentPinManager.swift */; };
 		52710521D717B4523061A728 /* Badges.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A052E0D380CAABFE34F3734 /* Badges.swift */; };
+		52771930190AB59AECE875EB /* GoogleMobileAds in Frameworks */ = {isa = PBXBuildFile; productRef = 22DD07E7272401006D6C929F /* GoogleMobileAds */; };
 		53A4D6D877940C34AED0ACEC /* Accessory.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6540E8B352E1EE80944522B6 /* Accessory.swift */; };
 		56BBCF43701970CEF8047C2E /* RiskSignal.swift in Sources */ = {isa = PBXBuildFile; fileRef = 46AC263E3E9D93D7C2A87768 /* RiskSignal.swift */; };
 		5A5E239406494166DBBD83D5 /* SafetyRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = E13BAB7BFACC350FA9B5607F /* SafetyRepository.swift */; };
@@ -112,6 +115,7 @@
 		ED9A4F81AD44396A8A81296D /* AppNavigation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C4AF819EFEB7ADC8C881753 /* AppNavigation.swift */; };
 		EFBA55173A3F6ED295CAA1FF /* TaskCalendarSyncManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = D368C7A169EF704B29FB66A5 /* TaskCalendarSyncManager.swift */; };
 		EFE0C1F4F698C5CB2426BC72 /* ChildLoginViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1C82710478DD99EED71D019D /* ChildLoginViewModel.swift */; };
+		F18CD0E9AFD67B08C283DC56 /* MissionZebra.storekit in Resources */ = {isa = PBXBuildFile; fileRef = 1205C7CC3885E8E6DFC8F336 /* MissionZebra.storekit */; };
 		F41AC1BD2F239DF1A3BF87E6 /* NavigationRouterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 46DC9CC7668A35F9B72B5B81 /* NavigationRouterTests.swift */; };
 		F4B59AEB595F29C9F6BA898F /* InMemoryMissionZebraRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = AEA35CF3D7B7384436CC13E0 /* InMemoryMissionZebraRepository.swift */; };
 		F51F9ACCCF7CE38D18B7E33C /* ParentAuthViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 04C29A63EA78A21B38290000 /* ParentAuthViewModel.swift */; };
@@ -169,8 +173,10 @@
 		0B66B408650F4049A63258AD /* Cards.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Cards.swift; sourceTree = "<group>"; };
 		0BFF5A1800D666506D4EBFED /* KeychainStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainStore.swift; sourceTree = "<group>"; };
 		0FB2644947635E9FB56B3ECF /* RoleSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoleSession.swift; sourceTree = "<group>"; };
+		1205C7CC3885E8E6DFC8F336 /* MissionZebra.storekit */ = {isa = PBXFileReference; lastKnownFileType = text; path = MissionZebra.storekit; sourceTree = "<group>"; };
 		14343449689BCABE67A0040F /* SoundManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SoundManager.swift; sourceTree = "<group>"; };
 		15D9C547BC2ED3C1F2844417 /* ThemeExtensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThemeExtensions.swift; sourceTree = "<group>"; };
+		16EFF0AC5EE507892E389422 /* ButtonStyles.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ButtonStyles.swift; sourceTree = "<group>"; };
 		1B926B2844174C2D30B41B2F /* DeviceModeScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceModeScreen.swift; sourceTree = "<group>"; };
 		1C82710478DD99EED71D019D /* ChildLoginViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChildLoginViewModel.swift; sourceTree = "<group>"; };
 		1C9B6769DED19CF3DDE20044 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
@@ -194,6 +200,7 @@
 		474B697C8A916FBD1EEDE0EF /* ChildScreenTimeTracker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChildScreenTimeTracker.swift; sourceTree = "<group>"; };
 		4822CC8DE3C536F57B311499 /* SplashScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplashScreen.swift; sourceTree = "<group>"; };
 		4AA83CFA4723487306DC1B59 /* PrivacyPolicyScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrivacyPolicyScreen.swift; sourceTree = "<group>"; };
+		5199BB2DFC199FFB41C988DC /* MissionZebraRelease.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = MissionZebraRelease.entitlements; sourceTree = "<group>"; };
 		53519A31219C66EC3D0B81AA /* PremiumBackendVerificationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PremiumBackendVerificationTests.swift; sourceTree = "<group>"; };
 		544E04D9F5AB9E46D416FBF4 /* Reward.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Reward.swift; sourceTree = "<group>"; };
 		573D9016114442C9163482A6 /* MissionZebraDeviceActivityMonitor.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = MissionZebraDeviceActivityMonitor.appex; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -215,6 +222,7 @@
 		76FC5EE2BD681717B8CFBA88 /* MissionZebraTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = MissionZebraTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		77D12307251C47B5313DB895 /* ZebraCustomizerScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ZebraCustomizerScreen.swift; sourceTree = "<group>"; };
 		7937CE7C7079AD1276A11BFD /* ZebraCategory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ZebraCategory.swift; sourceTree = "<group>"; };
+		820AE25A4E8CBAE720B9AF4E /* MissionZebraAds.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MissionZebraAds.swift; sourceTree = "<group>"; };
 		8295E7DCDAEBBA878920D474 /* Animations.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Animations.swift; sourceTree = "<group>"; };
 		85EE0AEA6D011A8ACA7E58F5 /* ChildData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChildData.swift; sourceTree = "<group>"; };
 		89DAD3C693E60B37105367BE /* WelcomeScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WelcomeScreen.swift; sourceTree = "<group>"; };
@@ -235,7 +243,7 @@
 		B3BDCB07303D6A0E54237F77 /* RewardsTab.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RewardsTab.swift; sourceTree = "<group>"; };
 		B4557D3EF8E2717D0A5837F2 /* TaskCalendarViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaskCalendarViewModel.swift; sourceTree = "<group>"; };
 		B82F0AEFAB5AD9ACC89CA3C2 /* ZebraCustomizerPolicyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ZebraCustomizerPolicyTests.swift; sourceTree = "<group>"; };
-		B8BC9003AB93D68B9FA6AB96 /* MissionZebra.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = MissionZebra.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		B8BC9003AB93D68B9FA6AB96 /* MissionZebra.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MissionZebra.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		B9FBF177D46B211859229FD4 /* RiskAnalyzer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RiskAnalyzer.swift; sourceTree = "<group>"; };
 		BE8470606957F3EA5BF76F3C /* RouteGuardPolicy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RouteGuardPolicy.swift; sourceTree = "<group>"; };
 		BFDA59735C000CB5BAF7977D /* RewardFirebaseRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RewardFirebaseRepository.swift; sourceTree = "<group>"; };
@@ -278,6 +286,7 @@
 				4D7B70011F5C4D54AE9581F8 /* FirebaseMessaging in Frameworks */,
 				BA26FD83D4947D8ACCFE975E /* FirebaseFunctions in Frameworks */,
 				63F2061C3791A89BB321726D /* GoogleSignIn in Frameworks */,
+				52771930190AB59AECE875EB /* GoogleMobileAds in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -301,6 +310,7 @@
 				B317C7ED6DBBAEEEB1AE3CA7 /* AddTaskDialog.swift */,
 				3E182D346585A8E925C154D1 /* Backgrounds.swift */,
 				3A052E0D380CAABFE34F3734 /* Badges.swift */,
+				16EFF0AC5EE507892E389422 /* ButtonStyles.swift */,
 				0B66B408650F4049A63258AD /* Cards.swift */,
 				9F8A03F497258CD7C68331C7 /* Charts.swift */,
 				D1ED32F51509F63693F011D9 /* Tooltips.swift */,
@@ -349,6 +359,7 @@
 		3F41625A7C2210077B6F392F /* Core */ = {
 			isa = PBXGroup;
 			children = (
+				AD8E5E8949A2B98C11BEEC25 /* Ads */,
 				B58F41DD68A7EE6E26F12606 /* Device */,
 				2F074794AA3C8CD90AF1D068 /* Error */,
 				C63426140346C187851B29E1 /* Models */,
@@ -496,6 +507,14 @@
 			path = Parent;
 			sourceTree = "<group>";
 		};
+		AD8E5E8949A2B98C11BEEC25 /* Ads */ = {
+			isa = PBXGroup;
+			children = (
+				820AE25A4E8CBAE720B9AF4E /* MissionZebraAds.swift */,
+			);
+			path = Ads;
+			sourceTree = "<group>";
+		};
 		B58F41DD68A7EE6E26F12606 /* Device */ = {
 			isa = PBXGroup;
 			children = (
@@ -592,7 +611,9 @@
 				6F9EBDD45A244BDB32C1124B /* Info.plist */,
 				05830095A4DCAD6F31F87E49 /* Localizable.strings */,
 				1F2153AC0B5A1DED5C401B6B /* MissionZebra.entitlements */,
+				1205C7CC3885E8E6DFC8F336 /* MissionZebra.storekit */,
 				06DF4AF825BFC77E22331DC2 /* MissionZebraApp.swift */,
+				5199BB2DFC199FFB41C988DC /* MissionZebraRelease.entitlements */,
 				5A88FC293A5D4EB77370E178 /* Auth */,
 				3F41625A7C2210077B6F392F /* Core */,
 				56069F08B99735D865B2B543 /* Data */,
@@ -693,6 +714,7 @@
 				3F2EFC55A85E401E29620D53 /* FirebaseMessaging */,
 				B922716EA497142675F9092A /* FirebaseFunctions */,
 				6E206732A7170C5CDDA6A4DB /* GoogleSignIn */,
+				22DD07E7272401006D6C929F /* GoogleMobileAds */,
 			);
 			productName = MissionZebra;
 			productReference = B8BC9003AB93D68B9FA6AB96 /* MissionZebra.app */;
@@ -733,9 +755,9 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				F678D8B08BC621213E0867DB /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
+				3D6EE40B3167F64E1CDF3CD8 /* XCRemoteSwiftPackageReference "swift-package-manager-google-mobile-ads" */,
 				0CC29BA8225C214CC3719864 /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */,
 			);
-			preferredProjectObjectVersion = 77;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
@@ -754,6 +776,7 @@
 				941206F96C261F382C659181 /* Assets.xcassets in Resources */,
 				6A299EC85FFDB0EF323A01BE /* GoogleService-Info.plist in Resources */,
 				8BEA70D4B585EE8DE709A94D /* Localizable.strings in Resources */,
+				F18CD0E9AFD67B08C283DC56 /* MissionZebra.storekit in Resources */,
 				E86D3B65D643FAB7CD4C026F /* README_SETUP.md in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -783,6 +806,7 @@
 				1C1BD74C435ED777F2AFF1B9 /* AuthRepository.swift in Sources */,
 				50C11D009CBDECD313B00B4C /* Backgrounds.swift in Sources */,
 				52710521D717B4523061A728 /* Badges.swift in Sources */,
+				2E10D98EE1865F0D33459DA0 /* ButtonStyles.swift in Sources */,
 				9E38BCE238BE801C0C95F177 /* Cards.swift in Sources */,
 				FA2E3E0A96D5D7E695E1655D /* Charts.swift in Sources */,
 				4E02E759360A4234AB8878F3 /* Child.swift in Sources */,
@@ -804,6 +828,7 @@
 				F4B59AEB595F29C9F6BA898F /* InMemoryMissionZebraRepository.swift in Sources */,
 				77EE4BE3A6434F5F525DA299 /* KeychainStore.swift in Sources */,
 				435A04348B25B54C6297185B /* LanguagePreferences.swift in Sources */,
+				2AADFB2E101F34DD393A0A74 /* MissionZebraAds.swift in Sources */,
 				D1383E2DA0337CEE70E066BA /* MissionZebraApp.swift in Sources */,
 				003245B60967DD2D628DD866 /* MissionZebraRepository.swift in Sources */,
 				B12B4046502BD0EDAFD2DB46 /* NotificationManager.swift in Sources */,
@@ -1056,7 +1081,7 @@
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = MissionZebraDeviceActivityMonitor/MissionZebraDeviceActivityMonitor.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 3;
+				CURRENT_PROJECT_VERSION = 5;
 				DEVELOPMENT_TEAM = MK69VX9ZR4;
 				INFOPLIST_FILE = MissionZebraDeviceActivityMonitor/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
@@ -1065,7 +1090,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 1.0.0;
+				MARKETING_VERSION = 1.0.8;
 				PRODUCT_BUNDLE_IDENTIFIER = be.missionzebra.app.deviceactivity;
 				SDKROOT = iphoneos;
 				SKIP_INSTALL = YES;
@@ -1102,7 +1127,7 @@
 				CODE_SIGN_ENTITLEMENTS = MissionZebra/MissionZebra.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 3;
+				CURRENT_PROJECT_VERSION = 11;
 				DEVELOPMENT_TEAM = MK69VX9ZR4;
 				INFOPLIST_FILE = MissionZebra/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
@@ -1110,7 +1135,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0.0;
+				MARKETING_VERSION = 1.1.2;
 				PRODUCT_BUNDLE_IDENTIFIER = be.missionzebra.app;
 				SDKROOT = iphoneos;
 				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
@@ -1124,7 +1149,7 @@
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = MissionZebraDeviceActivityMonitor/MissionZebraDeviceActivityMonitor.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 3;
+				CURRENT_PROJECT_VERSION = 5;
 				DEVELOPMENT_TEAM = MK69VX9ZR4;
 				INFOPLIST_FILE = MissionZebraDeviceActivityMonitor/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
@@ -1133,7 +1158,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 1.0.0;
+				MARKETING_VERSION = 1.0.8;
 				PRODUCT_BUNDLE_IDENTIFIER = be.missionzebra.app.deviceactivity;
 				SDKROOT = iphoneos;
 				SKIP_INSTALL = YES;
@@ -1150,7 +1175,7 @@
 				CODE_SIGN_ENTITLEMENTS = MissionZebra/MissionZebra.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 3;
+				CURRENT_PROJECT_VERSION = 11;
 				DEVELOPMENT_TEAM = MK69VX9ZR4;
 				INFOPLIST_FILE = MissionZebra/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
@@ -1158,7 +1183,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0.0;
+				MARKETING_VERSION = 1.1.2;
 				PRODUCT_BUNDLE_IDENTIFIER = be.missionzebra.app;
 				SDKROOT = iphoneos;
 				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
@@ -1217,6 +1242,14 @@
 				version = 7.0.0;
 			};
 		};
+		3D6EE40B3167F64E1CDF3CD8 /* XCRemoteSwiftPackageReference "swift-package-manager-google-mobile-ads" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/googleads/swift-package-manager-google-mobile-ads.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 13.5.0;
+			};
+		};
 		F678D8B08BC621213E0867DB /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/firebase/firebase-ios-sdk";
@@ -1228,6 +1261,11 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		22DD07E7272401006D6C929F /* GoogleMobileAds */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 3D6EE40B3167F64E1CDF3CD8 /* XCRemoteSwiftPackageReference "swift-package-manager-google-mobile-ads" */;
+			productName = GoogleMobileAds;
+		};
 		3EC4931B4754F131671A446D /* FirebaseAuth */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = F678D8B08BC621213E0867DB /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;

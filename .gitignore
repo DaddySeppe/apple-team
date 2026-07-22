@@ -1,0 +1,10 @@
+.DS_Store
+DerivedData/
+firebase-debug.log
+*.log
+.env
+.env.*
+functions/.env*
+.git.corrupt-icloud-restore/
+*.xcuserstate
+xcuserdata/

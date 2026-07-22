@@ -102,7 +102,7 @@ struct ParentLoginScreen: View {
                             .frame(maxWidth: .infinity)
                             .frame(height: 52)
                     }
-                    .buttonStyle(.borderedProminent)
+                    .buttonStyle(MZPrimaryButtonStyle())
                     .disabled(isLoading)
 
                     Spacer().frame(height: 12)
@@ -161,7 +161,7 @@ struct ParentLoginScreen: View {
                         .frame(maxWidth: .infinity)
                         .frame(height: 52)
                     }
-                    .buttonStyle(.bordered)
+                    .buttonStyle(MZSecondaryButtonStyle())
                     .disabled(isLoading)
 
                     Spacer()

@@ -163,16 +163,16 @@ private struct CalendarSyncCard: View {
                             Label("Sync nu", systemImage: "arrow.triangle.2.circlepath")
                         }
                     }
-                    .buttonStyle(.borderedProminent)
+                    .buttonStyle(MZPrimaryButtonStyle())
                     .disabled(isSyncing || !isPremium)
 
                     Button("Loskoppelen", role: .destructive, action: onDisconnect)
-                        .buttonStyle(.bordered)
+                        .buttonStyle(MZSecondaryButtonStyle())
                 } else {
                     Button(action: onConnect) {
                         Label("Koppel agenda", systemImage: "link")
                     }
-                    .buttonStyle(.borderedProminent)
+                    .buttonStyle(MZPrimaryButtonStyle())
                     .disabled(!isPremium)
                 }
             }

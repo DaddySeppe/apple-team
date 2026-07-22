@@ -29,6 +29,7 @@ final class DeviceActivityCoordinator {
     static let shared = DeviceActivityCoordinator()
 
     private let defaults: UserDefaults
+    private static let scheduleVersion = "daily-thresholds-v3"
 
     init(defaults: UserDefaults = MissionZebraAppGroup.defaults) {
         self.defaults = defaults
@@ -68,6 +69,12 @@ final class DeviceActivityCoordinator {
                 userInfo: [NSLocalizedDescriptionKey: DeviceActivityAvailability.missingSelection.userMessage]
             )
         }
+        let selectionSignature = try Self.selectionSignature(for: selection)
+        if defaults.string(forKey: MissionZebraDeviceActivityShared.monitorSelectionSignatureKey) == selectionSignature,
+           defaults.string(forKey: MissionZebraDeviceActivityShared.monitorScheduleVersionKey) == Self.scheduleVersion {
+            defaults.removeObject(forKey: MissionZebraDeviceActivityShared.permissionFallbackReasonKey)
+            return
+        }
 
         let events = Self.thresholdMinutes.reduce(into: [DeviceActivityEvent.Name: DeviceActivityEvent]()) { result, minutes in
             result[DeviceActivityEvent.Name(MissionZebraDeviceActivityShared.eventName(for: minutes))] = DeviceActivityEvent(
@@ -84,12 +91,17 @@ final class DeviceActivityCoordinator {
             repeats: true
         )
 
-        try DeviceActivityCenter().startMonitoring(
-            DeviceActivityName(MissionZebraDeviceActivityShared.activityName),
+        let activityName = DeviceActivityName(MissionZebraDeviceActivityShared.activityName)
+        let center = DeviceActivityCenter()
+        center.stopMonitoring([activityName])
+        try center.startMonitoring(
+            activityName,
             during: schedule,
             events: events
         )
         defaults.set(Int64(Date().timeIntervalSince1970 * 1000), forKey: MissionZebraDeviceActivityShared.monitorStartedAtKey)
+        defaults.set(selectionSignature, forKey: MissionZebraDeviceActivityShared.monitorSelectionSignatureKey)
+        defaults.set(Self.scheduleVersion, forKey: MissionZebraDeviceActivityShared.monitorScheduleVersionKey)
         defaults.removeObject(forKey: MissionZebraDeviceActivityShared.permissionFallbackReasonKey)
         #else
         throw NSError(
@@ -118,6 +130,23 @@ final class DeviceActivityCoordinator {
         }
         return try? JSONDecoder().decode(FamilyActivitySelection.self, from: data)
     }
+
+    private static func selectionSignature(for selection: FamilyActivitySelection) throws -> String {
+        let encoder = JSONEncoder()
+
+        func encodedTokens<Token: Encodable>(_ tokens: Set<Token>) throws -> String {
+            try tokens
+                .map { try encoder.encode($0).base64EncodedString() }
+                .sorted()
+                .joined(separator: ",")
+        }
+
+        return [
+            "apps:\(try encodedTokens(selection.applicationTokens))",
+            "categories:\(try encodedTokens(selection.categoryTokens))",
+            "webDomains:\(try encodedTokens(selection.webDomainTokens))"
+        ].joined(separator: "|")
+    }
     #endif
 
     func currentDeviceActivityMinutes(date: Date = Date()) -> Int {
@@ -129,5 +158,9 @@ final class DeviceActivityCoordinator {
             defaults.string(forKey: MissionZebraDeviceActivityShared.lastEventDateKey) == MissionZebraDeviceActivityShared.dateKey(for: date)
     }
 
-    static let thresholdMinutes = [5, 10, 15, 30, 45, 60, 90, 120, 180, 240, 300, 360, 480]
+    static let thresholdMinutes: [Int] = {
+        let perMinute = Array(1...180)
+        let longerSessions = stride(from: 185, through: 480, by: 5)
+        return Array(Set(perMinute + Array(longerSessions))).sorted()
+    }()
 }

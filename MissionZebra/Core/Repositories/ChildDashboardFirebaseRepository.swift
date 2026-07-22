@@ -40,9 +40,13 @@ class ChildDashboardFirebaseRepository: ObservableObject {
                     ? FirestoreDecoding.int(data["dailyScreenTimeUsedMinutes"])
                     : FirestoreDecoding.int(data["screenTimeUsedMinutes"])
                 let schedule = ScreenTimeSchedule.fromFirestore(data["screenTimeSchedule"])
-                let configuredLimit = data["dailyScreenTimeLimitMinutes"] != nil
+                let rawConfiguredLimit = data["dailyScreenTimeLimitMinutes"] != nil
                     ? FirestoreDecoding.int(data["dailyScreenTimeLimitMinutes"], default: 120)
                     : FirestoreDecoding.int(data["screenTimeLimitMinutes"], default: 120)
+                let lastValidLimit = FirestoreDecoding.int(data["lastValidDailyScreenTimeLimitMinutes"], default: 60)
+                let configuredLimit = rawConfiguredLimit > 0
+                    ? rawConfiguredLimit
+                    : ScreenTimeDefaults.sanitizedLimit(lastValidLimit)
                 let child = Child(
                     id: snapshot.documentID,
                     name: data["name"] as? String ?? "",

@@ -27,6 +27,7 @@ struct DeviceModeScreen: View {
 
                 Button(action: {
                     SessionManager.shared.setDeviceForChild(false)
+                    MissionZebraAdPrivacy.applyForParentMode()
                     router.reset(to: .parentDashboard)
                 }) {
                     Text("Dit toestel is voor mij als ouder")
@@ -34,20 +35,21 @@ struct DeviceModeScreen: View {
                         .frame(maxWidth: .infinity)
                         .frame(height: 60)
                 }
-                .buttonStyle(.borderedProminent)
+                .buttonStyle(MZPrimaryButtonStyle())
 
                 Spacer().frame(height: 16)
 
                 Button(action: {
-                    SessionManager.shared.setDeviceForChild(true)
-                    router.reset(to: .childLogin)
+                    SessionManager.shared.openChildModeFromParent()
+                    MissionZebraAdPrivacy.applyForChildMode()
+                    router.navigate(to: .childLogin)
                 }) {
                     Text("Dit toestel is voor een kind")
                         .font(.body)
                         .frame(maxWidth: .infinity)
                         .frame(height: 60)
                 }
-                .buttonStyle(.borderedProminent)
+                .buttonStyle(MZPrimaryButtonStyle())
 
                 Spacer()
             }

@@ -26,6 +26,11 @@ struct ParentDashboardUiState {
     var isAddingChild: Bool = false
     var addChildError: String? = nil
     var premiumStatus: PremiumStatus = PremiumStatus()
+    var isUpdatingAppBlocking: Bool = false
+
+    var appBlockingEnabled: Bool {
+        children.contains { $0.screenTimeSchedule.appBlockingEnabled }
+    }
 
     var premiumNudgeVariant: PremiumNudgeVariant? {
         PremiumFeatureGate.nudgeVariant(
@@ -151,6 +156,29 @@ class ParentDashboardViewModel: ObservableObject {
         uiState.familyTimeActive.toggle()
     }
 
+    func setAppBlockingEnabled(_ enabled: Bool) {
+        let children = uiState.children
+        guard !children.isEmpty else { return }
+
+        uiState.isUpdatingAppBlocking = true
+        uiState.children = children.map { child in
+            var updatedChild = child
+            updatedChild.screenTimeSchedule.appBlockingEnabled = enabled
+            return updatedChild
+        }
+
+        Task {
+            for child in children {
+                var schedule = child.screenTimeSchedule
+                schedule.appBlockingEnabled = enabled
+                _ = await childrenRepository.updateScreenTimeSchedule(childId: child.id, schedule: schedule)
+            }
+            await MainActor.run {
+                uiState.isUpdatingAppBlocking = false
+            }
+        }
+    }
+
     // MARK: - Task Management
 
     func onNewTaskTitleChange(_ value: String) {
@@ -226,9 +254,9 @@ class ParentDashboardViewModel: ObservableObject {
                 contributionTarget: contributionTarget
             )
             await MainActor.run {
-                uiState.isSavingTask = false
                 switch result {
                 case .success:
+                    uiState.taskError = nil
                     uiState.newTaskTitle = ""
                     uiState.newTaskPoints = ""
                     uiState.newTaskDueDate = Date()
@@ -238,6 +266,7 @@ class ParentDashboardViewModel: ObservableObject {
                 case .failure(let error):
                     uiState.taskError = error.localizedDescription
                 }
+                uiState.isSavingTask = false
             }
         }
     }
@@ -335,14 +364,15 @@ class ParentDashboardViewModel: ObservableObject {
         Task {
             let result = await rewardsRepository.addReward(title: title, costPoints: points, childId: childId)
             await MainActor.run {
-                uiState.isSavingReward = false
                 switch result {
                 case .success:
+                    uiState.rewardError = nil
                     uiState.newRewardTitle = ""
                     uiState.newRewardPoints = ""
                 case .failure(let error):
                     uiState.rewardError = error.localizedDescription
                 }
+                uiState.isSavingReward = false
             }
         }
     }
@@ -432,10 +462,13 @@ class ParentDashboardViewModel: ObservableObject {
         Task {
             let result = await childrenRepository.addChild(name: name, limitMinutes: limitMinutes, birthDate: birthDate)
             await MainActor.run {
-                uiState.isAddingChild = false
-                if case .failure(let error) = result {
+                switch result {
+                case .success:
+                    uiState.addChildError = nil
+                case .failure(let error):
                     uiState.addChildError = error.localizedDescription
                 }
+                uiState.isAddingChild = false
             }
         }
     }

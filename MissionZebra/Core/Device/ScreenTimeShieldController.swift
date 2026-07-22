@@ -64,6 +64,7 @@ final class ScreenTimeShieldController {
     }
 
     func shieldReason(for child: Child, now: Date = Date()) -> ScreenTimeShieldReason {
+        guard child.screenTimeSchedule.appBlockingEnabled else { return .none }
         if child.isBlocked { return .parentBlocked }
         if child.dailyScreenTimeLimitMinutes > 0 && child.dailyScreenTimeUsedMinutes >= child.dailyScreenTimeLimitMinutes {
             return .limitExceeded

@@ -38,6 +38,8 @@ struct TasksPage: View {
     let onRejectTask: (String) -> Void
     let onUpdateTask: (MZTask) -> Void
     let onDeleteTask: (String) -> Void
+    let showsAds: Bool
+    let onShowInterstitialAd: () -> Void
     let headerContent: AnyView
 
     @State private var sortOption: TaskSortOption = .dateDesc
@@ -61,6 +63,7 @@ struct TasksPage: View {
 
                     // Calendar button
                     Button(action: {
+                        onShowInterstitialAd()
                         router.navigate(to: .taskCalendar)
                     }) {
                         HStack {
@@ -70,7 +73,7 @@ struct TasksPage: View {
                         }
                         .frame(maxWidth: .infinity)
                     }
-                    .buttonStyle(.bordered)
+                    .buttonStyle(MZSecondaryButtonStyle())
                     .padding(.horizontal, 16)
 
                     Spacer().frame(height: 16)
@@ -93,15 +96,19 @@ struct TasksPage: View {
                     if sortedTasks.isEmpty {
                         EmptyStateCard()
                     } else {
-                        ForEach(sortedTasks) { task in
-                            ParentTaskCard(
-                                task: task,
-                                children: uiState.children,
-                                onApprove: { feedback in onApproveTask(task.id, feedback) },
-                                onReject: { onRejectTask(task.id) },
-                                onUpdateTask: onUpdateTask,
-                                onDeleteTask: onDeleteTask
-                            )
+                        ForEach(Array(sortedTasks.enumerated()), id: \.element.id) { index, task in
+                            VStack(spacing: 0) {
+                                ParentTaskCard(
+                                    task: task,
+                                    children: uiState.children,
+                                    onApprove: { feedback in onApproveTask(task.id, feedback) },
+                                    onReject: { onRejectTask(task.id) },
+                                    onUpdateTask: onUpdateTask,
+                                    onDeleteTask: onDeleteTask,
+                                    onShowInterstitialAd: onShowInterstitialAd
+                                )
+
+                            }
                         }
                     }
 
@@ -110,7 +117,10 @@ struct TasksPage: View {
             }
 
             // FAB
-            Button(action: { showAddTaskDialog = true }) {
+            Button(action: {
+                onShowInterstitialAd()
+                showAddTaskDialog = true
+            }) {
                 Image(systemName: "plus")
                     .font(.title2)
                     .fontWeight(.bold)
@@ -140,13 +150,18 @@ struct TasksPage: View {
                 onRepeatsWeeklyChange: onNewTaskRepeatsWeeklyChange,
                 onPurposeChange: onNewTaskPurposeChange,
                 onContributionTargetChange: onNewTaskContributionTargetChange,
-                onAddClick: onAddTaskClick,
+                onAddClick: {
+                    onAddTaskClick()
+                },
                 onDismiss: { showAddTaskDialog = false }
             )
         }
         .onChange(of: uiState.isSavingTask) { isSaving in
             if wasSavingTask && !isSaving && uiState.taskError == nil {
                 showAddTaskDialog = false
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+                    onShowInterstitialAd()
+                }
             }
             wasSavingTask = isSaving
         }
@@ -216,6 +231,7 @@ struct ParentTaskCard: View {
     let onReject: () -> Void
     let onUpdateTask: (MZTask) -> Void
     let onDeleteTask: (String) -> Void
+    let onShowInterstitialAd: () -> Void
 
     @State private var showEditDialog = false
     @State private var showDeleteDialog = false
@@ -295,7 +311,10 @@ struct ParentTaskCard: View {
                 // Actions
                 if task.pendingApproval && !task.completed {
                     HStack {
-                        Button(action: { showEditDialog = true }) {
+                        Button(action: {
+                            onShowInterstitialAd()
+                            showEditDialog = true
+                        }) {
                             Image(systemName: "pencil")
                                 .font(.caption)
                                 .foregroundColor(.secondary)
@@ -304,22 +323,29 @@ struct ParentTaskCard: View {
 
                         Spacer()
 
-                        Button("Afwijzen", action: onReject)
+                        Button("Afwijzen") {
+                            onShowInterstitialAd()
+                            onReject()
+                        }
                             .font(.caption)
                             .foregroundColor(.red)
-                            .buttonStyle(.bordered)
+                            .buttonStyle(MZSecondaryButtonStyle())
 
                         Button("Goedkeuren") {
+                            onShowInterstitialAd()
                             showFeedbackDialog = true
                         }
                             .font(.caption)
-                            .buttonStyle(.borderedProminent)
+                            .buttonStyle(MZPrimaryButtonStyle())
                     }
                     .padding(.top, 12)
                 } else {
                     HStack {
                         Spacer()
-                        Button(action: { showEditDialog = true }) {
+                        Button(action: {
+                            onShowInterstitialAd()
+                            showEditDialog = true
+                        }) {
                             Image(systemName: "pencil")
                                 .font(.caption)
                                 .foregroundColor(.secondary)
@@ -336,6 +362,7 @@ struct ParentTaskCard: View {
         .alert("Taak bewerken", isPresented: $showEditDialog) {
             // SwiftUI alert limitations - simplified edit
             Button("Verwijderen", role: .destructive) {
+                onShowInterstitialAd()
                 onDeleteTask(task.id)
             }
             Button("Annuleren", role: .cancel) {}
@@ -343,6 +370,7 @@ struct ParentTaskCard: View {
         .alert("Feedback voor \(childName)", isPresented: $showFeedbackDialog) {
             TextField("Bijv. Mooi volgehouden!", text: $parentFeedback)
             Button("Goedkeuren") {
+                onShowInterstitialAd()
                 onApprove(parentFeedback.trimmingCharacters(in: .whitespacesAndNewlines))
                 parentFeedback = ""
             }

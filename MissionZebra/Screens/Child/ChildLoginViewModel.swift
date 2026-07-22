@@ -47,7 +47,7 @@ class ChildLoginViewModel: ObservableObject {
         uiState.error = nil
 
         Task {
-            let result = await repository.addChild(name: name, limitMinutes: 0)
+            let result = await repository.addChild(name: name, limitMinutes: ScreenTimeDefaults.dailyLimitMinutes)
             await MainActor.run {
                 switch result {
                 case .success:

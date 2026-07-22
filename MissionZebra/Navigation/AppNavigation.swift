@@ -85,7 +85,7 @@ struct AppNavigation: View {
                 TaskCalendarScreen()
             }
         case .childDashboard(let childId, let childName):
-            ChildDashboardRoute {
+            ChildDashboardRoute(childId: childId, childName: childName) {
                 ChildDashboardScreen(childId: childId, childName: childName)
             }
         }
@@ -97,6 +97,7 @@ struct ParentRoute<Content: View>: View {
     @State private var isRefreshingPinState = false
     @State private var attemptedRemotePinRefresh = false
     @State private var remotePinConfigured = false
+    @State private var authRestoreAttempts = 0
     let content: Content
 
     init(@ViewBuilder content: () -> Content) {
@@ -108,8 +109,14 @@ struct ParentRoute<Content: View>: View {
     }
 
     private var allowed: Bool {
-        SessionManager.shared.getRoleSession().isParent &&
-            (ParentPinManager.shared.hasParentPin() || remotePinConfigured)
+        let session = SessionManager.shared.getRoleSession()
+        return session.isParentLocally &&
+            (ParentPinManager.shared.hasParentPin() || remotePinConfigured || session.firebaseUid == nil)
+    }
+
+    private var isWaitingForAuthRestore: Bool {
+        let session = SessionManager.shared.getRoleSession()
+        return session.isParentLocally && session.firebaseUid == nil && authRestoreAttempts < 12
     }
 
     private var redirect: RouteRedirect? {
@@ -123,6 +130,9 @@ struct ParentRoute<Content: View>: View {
         Group {
             if allowed {
                 content
+            } else if isWaitingForAuthRestore {
+                ProgressView()
+                    .task { await waitForAuthRestore() }
             } else if isRefreshingPinState {
                 ProgressView()
                     .task { await refreshPinState() }
@@ -130,6 +140,15 @@ struct ParentRoute<Content: View>: View {
                 Color.clear
                     .task { await redirectIfNeeded() }
             }
+        }
+    }
+
+    @MainActor
+    private func waitForAuthRestore() async {
+        try? await Task.sleep(nanoseconds: 250_000_000)
+        authRestoreAttempts += 1
+        if !isWaitingForAuthRestore {
+            await redirectIfNeeded()
         }
     }
 
@@ -145,7 +164,11 @@ struct ParentRoute<Content: View>: View {
 
     @MainActor
     private func redirectIfNeeded() async {
+        let session = SessionManager.shared.getRoleSession()
         if redirect == nil { return }
+        if session.isParentLocally && session.firebaseUid == nil {
+            return
+        }
         if hasFirebaseUser && !attemptedRemotePinRefresh && !isRefreshingPinState {
             isRefreshingPinState = true
             await refreshPinState()
@@ -157,9 +180,15 @@ struct ParentRoute<Content: View>: View {
 
 struct ChildDashboardRoute<Content: View>: View {
     @EnvironmentObject private var router: NavigationRouter
+    @State private var repairedChildSession = false
+    @State private var authRestoreAttempts = 0
+    let childId: String
+    let childName: String
     let content: Content
 
-    init(@ViewBuilder content: () -> Content) {
+    init(childId: String, childName: String, @ViewBuilder content: () -> Content) {
+        self.childId = childId
+        self.childName = childName
         self.content = content()
     }
 
@@ -168,7 +197,14 @@ struct ChildDashboardRoute<Content: View>: View {
     }
 
     private var allowed: Bool {
-        SessionManager.shared.getRoleSession().isChild
+        let session = SessionManager.shared.getRoleSession()
+        return repairedChildSession ||
+            (session.isChildLocally && session.childId == childId)
+    }
+
+    private var isWaitingForAuthRestore: Bool {
+        let session = SessionManager.shared.getRoleSession()
+        return session.isChildLocally && session.firebaseUid == nil && authRestoreAttempts < 12
     }
 
     private var redirect: RouteRedirect? {
@@ -179,15 +215,34 @@ struct ChildDashboardRoute<Content: View>: View {
         Group {
             if allowed {
                 content
+            } else if isWaitingForAuthRestore {
+                ProgressView()
+                    .task { await waitForAuthRestore() }
             } else {
                 Color.clear
-                    .task { redirectIfNeeded() }
+                    .task { repairSessionOrRedirect() }
             }
         }
     }
 
     @MainActor
-    private func redirectIfNeeded() {
+    private func waitForAuthRestore() async {
+        try? await Task.sleep(nanoseconds: 250_000_000)
+        authRestoreAttempts += 1
+        if !isWaitingForAuthRestore {
+            repairSessionOrRedirect()
+        }
+    }
+
+    @MainActor
+    private func repairSessionOrRedirect() {
+        if hasFirebaseUser {
+            SessionManager.shared.setChildLoggedIn(childId: childId, childName: childName)
+            MissionZebraAdPrivacy.applyForChildMode()
+            repairedChildSession = true
+            return
+        }
+
         guard let redirect else { return }
         router.reset(to: redirect == .childLogin ? .childLogin : .welcome)
     }

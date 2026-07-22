@@ -21,18 +21,102 @@ struct MissionZebraCard<Content: View>: View {
     }
 }
 
+struct ParentPinGateSheet: View {
+    @Environment(\.dismiss) private var dismiss
+    @FocusState private var isPinFocused: Bool
+
+    let title: String
+    let message: String
+    let onSuccess: () -> Void
+
+    @State private var pin = ""
+    @State private var error: String?
+
+    var body: some View {
+        NavigationStack {
+            VStack(alignment: .leading, spacing: 14) {
+                Text(message)
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+
+                TextField("4-cijferige PIN", text: $pin)
+                    .keyboardType(.numberPad)
+                    .textContentType(.oneTimeCode)
+                    .focused($isPinFocused)
+                    .textFieldStyle(.roundedBorder)
+                    .onChange(of: pin) { newValue in
+                        let filtered = String(newValue.filter { $0.isNumber }.prefix(4))
+                        if filtered != newValue {
+                            pin = filtered
+                        }
+                        if error != nil {
+                            error = nil
+                        }
+                    }
+
+                if let error {
+                    Text(error)
+                        .font(.caption)
+                        .fontWeight(.semibold)
+                        .foregroundColor(.red)
+                }
+
+                Button(action: validatePin) {
+                    Text("Verder")
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.borderedProminent)
+                .disabled(pin.count != 4)
+
+                Spacer(minLength: 0)
+            }
+            .padding(20)
+            .navigationTitle(title)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Annuleren") { dismiss() }
+                }
+            }
+        }
+        .presentationDetents([.height(260)])
+        .onAppear {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+                isPinFocused = true
+            }
+        }
+    }
+
+    private func validatePin() {
+        guard ParentPinManager.shared.checkPin(pin) else {
+            pin = ""
+            error = "Foute code. Probeer opnieuw."
+            isPinFocused = true
+            return
+        }
+
+        isPinFocused = false
+        pin = ""
+        error = nil
+        dismiss()
+        DispatchQueue.main.async {
+            onSuccess()
+        }
+    }
+}
+
 // MARK: - Child Dashboard Screen
 
 struct ChildDashboardScreen: View {
     @EnvironmentObject var router: NavigationRouter
+    @Environment(\.scenePhase) private var scenePhase
     let childId: String
     let childName: String
 
     @StateObject private var viewModel: ChildDashboardViewModel
 
-    @State private var showExitPinDialog = false
-    @State private var exitPinInput = ""
-    @State private var exitPinError: String?
+    @State private var showExitPinSheet = false
+    @State private var parentPinDestination: AppRoute = .parentDashboard
     @State private var showConfetti = false
 
     init(childId: String, childName: String) {
@@ -89,19 +173,44 @@ struct ChildDashboardScreen: View {
         )) {
             Button("Ok") { viewModel.dismissScreenTimeDialog() }
         } message: {
-            Text("MissionZebra houdt nu bij hoe lang je deze app gebruikt en slaat dat op voor je ouders.")
+            Text("MissionZebra meet echte schermtijd via Apple Screen Time zodra je ouder dit heeft geactiveerd.")
         }
-        .alert("Ouder-PIN", isPresented: $showExitPinDialog) {
-            exitPinAlertContent
-        } message: {
-            exitPinAlertMessage
+        .sheet(isPresented: $showExitPinSheet) {
+            ParentPinGateSheet(
+                title: "Ouder-PIN",
+                message: "Voer je 4-cijferige PIN in om naar de ouderomgeving te gaan."
+            ) {
+                continueAsParent(to: parentPinDestination)
+            }
         }
         .onAppear {
             SessionManager.shared.setChildLoggedIn(childId: childId, childName: childName)
+            MissionZebraAdPrivacy.applyForChildMode()
+            viewModel.checkAndSyncDeviceScreenTime()
+        }
+        .onChange(of: scenePhase) { phase in
+            guard phase == .active else { return }
+            viewModel.checkAndSyncDeviceScreenTime()
         }
     }
 
     // MARK: - Extracted Sub-views
+
+    private func continueAsParent(to destination: AppRoute) {
+        SessionManager.shared.setParentLoggedIn()
+        MissionZebraAdPrivacy.applyForParentMode()
+        viewModel.endSession()
+
+        switch destination {
+        case .parentScreenTimeControl:
+            router.reset(to: .parentDashboard)
+            DispatchQueue.main.async {
+                router.navigate(to: .parentScreenTimeControl)
+            }
+        default:
+            router.reset(to: .parentDashboard)
+        }
+    }
 
     @ViewBuilder
     private func mainContent(state: ChildDashboardUiState) -> some View {
@@ -119,9 +228,23 @@ struct ChildDashboardScreen: View {
                         equippedAccessoryEmoji: viewModel.accessoryEmoji(for: state.child),
                         usedMinutes: usedMinutes,
                         limitMinutes: limitMinutes,
-                        onParentAccessClick: { showExitPinDialog = true },
+                        onParentAccessClick: {
+                            parentPinDestination = .parentDashboard
+                            showExitPinSheet = true
+                        },
                         onZebraClick: { viewModel.toggleShop(isOpen: true) }
                     )
+
+                    if let message = state.screenTimeStatusMessage {
+                        ScreenTimeStatusNotice(
+                            message: message,
+                            onParentAccessClick: {
+                                parentPinDestination = .parentScreenTimeControl
+                                showExitPinSheet = true
+                            }
+                        )
+                        .padding(.top, 16)
+                    }
 
                     if let msg = state.child?.motivationalMessage, !msg.isEmpty {
                         ParentMessageCard(message: msg, onDismiss: { viewModel.dismissMessage() })
@@ -195,36 +318,51 @@ struct ChildDashboardScreen: View {
         )
     }
 
-    @ViewBuilder
-    private var exitPinAlertContent: some View {
-        TextField("4-cijferige PIN", text: $exitPinInput)
-            .keyboardType(.numberPad)
-        Button("Verder") {
-            if ParentPinManager.shared.checkPin(exitPinInput) {
-                SessionManager.shared.setParentLoggedIn()
-                showExitPinDialog = false
-                exitPinInput = ""
-                exitPinError = nil
-                viewModel.endSession()
-                router.reset(to: .parentDashboard)
-            } else {
-                exitPinError = "Foute code"
-            }
-        }
-        Button("Annuleren", role: .cancel) {
-            showExitPinDialog = false
-            exitPinInput = ""
-            exitPinError = nil
-        }
-    }
+}
 
-    @ViewBuilder
-    private var exitPinAlertMessage: some View {
-        if let error = exitPinError {
-            Text(error)
-        } else {
-            Text("Voer je 4-cijferige PIN in om af te sluiten")
+private struct ScreenTimeStatusNotice: View {
+    let message: String
+    let onParentAccessClick: () -> Void
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 12) {
+            Image(systemName: "hourglass.badge.exclamationmark")
+                .font(.title3)
+                .foregroundColor(.orange)
+                .frame(width: 28)
+
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Echte schermtijd nog niet binnen")
+                    .font(.headline)
+                    .fontWeight(.bold)
+
+                Text("Vraag je ouder om Apple Screen Time te controleren. MissionZebra telt alleen echte schermtijd wanneer Apple meetdata doorstuurt.")
+                    .font(.subheadline)
+                    .fontWeight(.semibold)
+                    .foregroundColor(.primary)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                Text(message)
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                Button(action: onParentAccessClick) {
+                    Label("Ouder-PIN en schermtijd openen", systemImage: "lock.fill")
+                }
+                .buttonStyle(.borderedProminent)
+                .controlSize(.small)
+            }
+
+            Spacer(minLength: 0)
         }
+        .padding(14)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: 18)
+                .fill(Color(.secondarySystemBackground))
+                .shadow(color: .black.opacity(0.10), radius: 4, x: 0, y: 2)
+        )
     }
 }
 

@@ -115,7 +115,7 @@ struct PrivacyPolicyScreen: View {
                     Button("Terug") {
                         router.goBack()
                     }
-                    .buttonStyle(.borderedProminent)
+                    .buttonStyle(MZPrimaryButtonStyle())
                 }
             }
             .padding(20)

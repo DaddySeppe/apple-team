@@ -1,12 +1,20 @@
 import Foundation
 
+enum ScreenTimeDefaults {
+    static let dailyLimitMinutes = 60
+
+    static func sanitizedLimit(_ minutes: Int) -> Int {
+        minutes > 0 ? minutes : dailyLimitMinutes
+    }
+}
+
 struct Child: Identifiable, Codable, Equatable {
     var id: String = ""
     var name: String = ""
     var birthDate: String? = nil // "yyyy-MM-dd"
     var points: Int = 0
     var dailyScreenTimeUsedMinutes: Int = 0
-    var dailyScreenTimeLimitMinutes: Int = 60
+    var dailyScreenTimeLimitMinutes: Int = ScreenTimeDefaults.dailyLimitMinutes
     var isBlocked: Bool = false
 
     var purchasedAccessoryIds: [String] = []
@@ -28,6 +36,7 @@ struct Child: Identifiable, Codable, Equatable {
 
 struct ScreenTimeSchedule: Codable, Equatable {
     var enabled: Bool = false
+    var appBlockingEnabled: Bool = false
     var schoolDayLimitMinutes: Int = 60
     var weekendLimitMinutes: Int = 90
     var vacationModeEnabled: Bool = false
@@ -40,21 +49,22 @@ struct ScreenTimeSchedule: Codable, Equatable {
     var focusEndHour: Int = 18
 
     func effectiveLimitMinutes(defaultLimitMinutes: Int, calendar: Calendar = .current, date: Date = Date()) -> Int {
-        guard enabled else { return defaultLimitMinutes }
+        guard enabled else { return ScreenTimeDefaults.sanitizedLimit(defaultLimitMinutes) }
         if vacationModeEnabled {
-            return max(vacationLimitMinutes, 1)
+            return ScreenTimeDefaults.sanitizedLimit(vacationLimitMinutes)
         }
 
         let weekday = calendar.component(.weekday, from: date)
         if weekday == 1 || weekday == 7 {
-            return max(weekendLimitMinutes, 1)
+            return ScreenTimeDefaults.sanitizedLimit(weekendLimitMinutes)
         }
-        return max(schoolDayLimitMinutes, 1)
+        return ScreenTimeDefaults.sanitizedLimit(schoolDayLimitMinutes)
     }
 
     func toFirestoreMap() -> [String: Any] {
         [
             "enabled": enabled,
+            "appBlockingEnabled": appBlockingEnabled,
             "schoolDayLimitMinutes": schoolDayLimitMinutes,
             "weekendLimitMinutes": weekendLimitMinutes,
             "vacationModeEnabled": vacationModeEnabled,
@@ -75,6 +85,7 @@ struct ScreenTimeSchedule: Codable, Equatable {
 
         return ScreenTimeSchedule(
             enabled: FirestoreDecoding.bool(raw["enabled"]),
+            appBlockingEnabled: FirestoreDecoding.bool(raw["appBlockingEnabled"]),
             schoolDayLimitMinutes: FirestoreDecoding.int(raw["schoolDayLimitMinutes"], default: 60),
             weekendLimitMinutes: FirestoreDecoding.int(raw["weekendLimitMinutes"], default: 90),
             vacationModeEnabled: FirestoreDecoding.bool(raw["vacationModeEnabled"]),

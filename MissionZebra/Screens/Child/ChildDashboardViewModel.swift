@@ -7,8 +7,9 @@ struct ChildDashboardUiState {
     var rewards: [Reward] = []
     var isLoading: Bool = true
     var error: String? = nil
-    var showScreenTimeDialog: Bool = true
+    var showScreenTimeDialog: Bool = false
     var needsUsagePermission: Bool = false
+    var screenTimeStatusMessage: String? = nil
     var isFocusModeActive: Bool = false
     var focusStartTime: Date? = nil
     var startScreenTimeMinutes: Int = 0
@@ -28,6 +29,7 @@ class ChildDashboardViewModel: ObservableObject {
     private let rewardsRepository: RewardFirebaseRepository
     private let screenTimeRepository: ScreenTimeFirebaseRepository
     private let deviceUsageRepository: DeviceUsageRepository
+    private let screenTimeAttribution: ChildScreenTimeAttribution
     private let zebraShopRepository: ZebraShopRepository
     private let safetyUsageProducer: SafetyUsageProducer
     private let shieldController: ScreenTimeShieldController
@@ -35,6 +37,8 @@ class ChildDashboardViewModel: ObservableObject {
     private var cancellables = Set<AnyCancellable>()
     private var previousPoints: Int? = nil
     private var screenTimeSyncTimer: Timer?
+    private var didCheckStreak = false
+    private var isSyncingScreenTime = false
 
     init(
         childId: String,
@@ -44,6 +48,7 @@ class ChildDashboardViewModel: ObservableObject {
         rewardsRepository: RewardFirebaseRepository = RewardFirebaseRepository(),
         screenTimeRepository: ScreenTimeFirebaseRepository = ScreenTimeFirebaseRepository(),
         deviceUsageRepository: DeviceUsageRepository = DeviceUsageRepository(),
+        screenTimeAttribution: ChildScreenTimeAttribution = .shared,
         zebraShopRepository: ZebraShopRepository = ZebraShopRepository(),
         safetyUsageProducer: SafetyUsageProducer = SafetyUsageProducer(),
         shieldController: ScreenTimeShieldController = .shared
@@ -55,15 +60,22 @@ class ChildDashboardViewModel: ObservableObject {
         self.rewardsRepository = rewardsRepository
         self.screenTimeRepository = screenTimeRepository
         self.deviceUsageRepository = deviceUsageRepository
+        self.screenTimeAttribution = screenTimeAttribution
         self.zebraShopRepository = zebraShopRepository
         self.safetyUsageProducer = safetyUsageProducer
         self.shieldController = shieldController
 
         screenTimeRepository.startSession()
+        screenTimeAttribution.startSession(
+            childId: childId,
+            rawDeviceMinutes: deviceUsageRepository.currentDeviceActivityTotalMinutes()
+        )
         observeData()
-        Task { _ = await deviceUsageRepository.startDeviceActivityMonitoringIfPossible() }
+        Task {
+            try? await Task.sleep(nanoseconds: 500_000_000)
+            _ = await deviceUsageRepository.startDeviceActivityMonitoringIfPossible()
+        }
         startScreenTimeAutoSync()
-        checkStreak()
     }
 
     deinit {
@@ -71,19 +83,12 @@ class ChildDashboardViewModel: ObservableObject {
         screenTimeSyncTimer?.invalidate()
     }
 
-    private func checkStreak() {
+    private func checkStreak(for child: Child) {
         Task {
-            // Simplified streak check
             let formatter = DateFormatter()
             formatter.dateFormat = "yyyy-MM-dd"
             let today = formatter.string(from: Date())
             let yesterday = formatter.string(from: Calendar.current.date(byAdding: .day, value: -1, to: Date())!)
-
-            // We'll get the child from the flow
-            // For now, wait a bit and use the current state
-            try? await Task.sleep(nanoseconds: 2_000_000_000) // 2 second wait for data
-
-            guard let child = uiState.child else { return }
 
             if child.lastStreakCheckDate == today { return }
 
@@ -128,6 +133,11 @@ class ChildDashboardViewModel: ObservableObject {
             let tasksForChild = tasks.filter { $0.childId == self.childId }
             let rewardsForChild = rewards.filter { $0.childId == self.childId }
 
+            if let child, !self.didCheckStreak {
+                self.didCheckStreak = true
+                self.checkStreak(for: child)
+            }
+
             self.uiState = ChildDashboardUiState(
                 child: child,
                 tasks: tasksForChild,
@@ -136,6 +146,7 @@ class ChildDashboardViewModel: ObservableObject {
                 error: self.uiState.error,
                 showScreenTimeDialog: self.uiState.showScreenTimeDialog,
                 needsUsagePermission: self.uiState.needsUsagePermission,
+                screenTimeStatusMessage: self.uiState.screenTimeStatusMessage,
                 isFocusModeActive: self.uiState.isFocusModeActive,
                 focusStartTime: self.uiState.focusStartTime,
                 startScreenTimeMinutes: self.uiState.startScreenTimeMinutes,
@@ -160,56 +171,86 @@ class ChildDashboardViewModel: ObservableObject {
     }
 
     func checkAndSyncDeviceScreenTime() {
-        Task {
-            if !deviceUsageRepository.hasUsagePermission() {
-                _ = await childrenRepository.updateScreenTimePermission(childId: childId, granted: false)
-                await MainActor.run {
-                    uiState.needsUsagePermission = true
-                }
-            } else {
-                do {
-                    let snapshot = await deviceUsageRepository.getTodayUsageSnapshot()
-                    if snapshot.isWholeDeviceScreenTime {
-                        _ = await childrenRepository.updateDailyScreenTime(
-                            childId: childId,
-                            minutes: snapshot.minutes,
-                            source: snapshot.source.rawValue
-                        )
-                        _ = await safetyUsageProducer.uploadDeviceActivitySnapshot(
-                            childId: childId,
-                            usageSnapshot: snapshot
-                        )
-                    } else {
-                        _ = await childrenRepository.updateAppForegroundUsage(
-                            childId: childId,
-                            minutes: snapshot.minutes,
-                            source: snapshot.source.rawValue
-                        )
-                    }
-                    await MainActor.run {
-                        uiState.needsUsagePermission = !snapshot.isWholeDeviceScreenTime
-                        uiState.error = nil
-                    }
+        guard !isSyncingScreenTime else { return }
+        isSyncingScreenTime = true
 
-                    // Check screen time limit and send notification if needed
-                    let limit = uiState.child?.dailyScreenTimeLimitMinutes ?? 60
-                    if snapshot.isWholeDeviceScreenTime {
-                        NotificationManager.shared.checkAndNotify(
-                            childName: childName,
-                            usedMinutes: snapshot.minutes,
-                            limitMinutes: limit
-                        )
-                    }
-                    await MainActor.run {
-                        shieldController.updateShield(for: uiState.child)
-                    }
+        Task {
+            defer {
+                Task { @MainActor in
+                    self.isSyncingScreenTime = false
                 }
+            }
+
+            let availability = await deviceUsageRepository.startDeviceActivityMonitoringIfPossible()
+            let snapshot = await deviceUsageRepository.getTodayUsageSnapshot()
+            let isScreenTimeSetupActive = availability == .available
+
+            if snapshot.isWholeDeviceScreenTime {
+                let childMinutes = screenTimeAttribution.attributedMinutes(
+                    childId: childId,
+                    rawDeviceMinutes: snapshot.minutes
+                )
+                let childSnapshot = snapshot.replacingMinutes(childMinutes)
+                _ = await childrenRepository.updateDailyScreenTime(
+                    childId: childId,
+                    minutes: childMinutes,
+                    source: "DEVICE_ACTIVITY_CHILD_ATTRIBUTED"
+                )
+                _ = await safetyUsageProducer.uploadDeviceActivitySnapshot(
+                    childId: childId,
+                    usageSnapshot: childSnapshot
+                )
+            } else {
+                _ = await childrenRepository.updateScreenTimePermission(
+                    childId: childId,
+                    granted: isScreenTimeSetupActive
+                )
+            }
+
+            await MainActor.run {
+                uiState.needsUsagePermission = !isScreenTimeSetupActive
+                uiState.screenTimeStatusMessage = screenTimeStatusMessage(
+                    availability: availability
+                )
+                if isScreenTimeSetupActive {
+                    uiState.showScreenTimeDialog = false
+                }
+                uiState.error = nil
+            }
+
+            // Check screen time limit and send notification if needed.
+            let limit = uiState.child?.dailyScreenTimeLimitMinutes ?? 60
+            if snapshot.isWholeDeviceScreenTime {
+                let childMinutes = screenTimeAttribution.attributedMinutes(
+                    childId: childId,
+                    rawDeviceMinutes: snapshot.minutes
+                )
+                NotificationManager.shared.checkAndNotify(
+                    childName: childName,
+                    childId: childId,
+                    usedMinutes: childMinutes,
+                    limitMinutes: limit
+                )
+            }
+            await MainActor.run {
+                shieldController.updateShield(for: uiState.child)
             }
         }
     }
 
     func usagePermissionDialogHandled() {
         uiState.needsUsagePermission = false
+    }
+
+    private func screenTimeStatusMessage(
+        availability: DeviceActivityAvailability
+    ) -> String? {
+        switch availability {
+        case .available:
+            return nil
+        case .missingAuthorization, .missingSelection, .unavailable:
+            return "\(availability.userMessage) Tot dan kan MissionZebra geen schermtijd aftrekken."
+        }
     }
 
     func markTaskDone(taskId: String, childReflection: String, effortLevel: String) {
@@ -240,6 +281,20 @@ class ChildDashboardViewModel: ObservableObject {
 
     func endSession() {
         Task {
+            guard deviceUsageRepository.usageSource == .deviceActivity else {
+                _ = await screenTimeRepository.endSession(childId: childId)
+                return
+            }
+            let rawMinutes = deviceUsageRepository.currentDeviceActivityTotalMinutes()
+            let childMinutes = screenTimeAttribution.endSession(
+                childId: childId,
+                rawDeviceMinutes: rawMinutes
+            )
+            _ = await childrenRepository.updateDailyScreenTime(
+                childId: childId,
+                minutes: childMinutes,
+                source: "DEVICE_ACTIVITY_CHILD_ATTRIBUTED"
+            )
             _ = await screenTimeRepository.endSession(childId: childId)
         }
     }

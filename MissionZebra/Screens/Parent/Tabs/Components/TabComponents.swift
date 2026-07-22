@@ -10,10 +10,13 @@ struct ManageChildrenDialog: View {
     let isAdding: Bool
     let addChildError: String?
     let onClearError: () -> Void
+    let showsAds: Bool
+    let onShowInterstitialAd: () -> Void
 
     @State private var newChildName = ""
     @State private var newChildLimit = "60"
     @State private var newChildBirthDate = Calendar.current.date(byAdding: .year, value: -8, to: Date()) ?? Date()
+    @State private var wasAddingChild = false
 
     private let presets = ["30", "60", "90", "120"]
 
@@ -60,6 +63,7 @@ struct ManageChildrenDialog: View {
                     Button(action: {
                         let limit = Int(newChildLimit) ?? 60
                         if !newChildName.trimmingCharacters(in: .whitespaces).isEmpty {
+                            onShowInterstitialAd()
                             onAddChild(newChildName, limit, Self.dateKey(from: newChildBirthDate))
                         }
                     }) {
@@ -71,18 +75,31 @@ struct ManageChildrenDialog: View {
                         }
                     }
                     .disabled(isAdding || newChildName.trimmingCharacters(in: .whitespaces).isEmpty)
+                    .buttonStyle(MZPrimaryButtonStyle())
                 }
 
                 // Existing Children
                 Section("Huidige kinderen") {
                     ForEach(children) { child in
                         ManageChildItem(child: child) {
+                            onShowInterstitialAd()
                             onDeleteChild(child.id)
                         }
                     }
                 }
             }
             .navigationTitle("Kinderen beheren")
+            .onChange(of: isAdding) { adding in
+                if wasAddingChild && !adding && addChildError == nil {
+                    newChildName = ""
+                    newChildLimit = "60"
+                    newChildBirthDate = Calendar.current.date(byAdding: .year, value: -8, to: Date()) ?? Date()
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+                        onShowInterstitialAd()
+                    }
+                }
+                wasAddingChild = adding
+            }
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Sluiten", action: onDismiss)

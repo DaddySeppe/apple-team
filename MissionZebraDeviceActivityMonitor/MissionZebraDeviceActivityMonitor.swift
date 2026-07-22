@@ -8,9 +8,13 @@ final class MissionZebraDeviceActivityMonitor: DeviceActivityMonitor {
         super.intervalDidStart(for: activity)
         guard activity.rawValue == MissionZebraDeviceActivityShared.activityName else { return }
         let defaults = MissionZebraAppGroup.defaults
-        defaults.removeObject(forKey: MissionZebraDeviceActivityShared.deviceActivityUsageKey())
-        defaults.removeObject(forKey: MissionZebraDeviceActivityShared.lastThresholdMinutesKey)
-        defaults.set(MissionZebraDeviceActivityShared.dateKey(), forKey: MissionZebraDeviceActivityShared.lastEventDateKey)
+        let todayKey = MissionZebraDeviceActivityShared.dateKey()
+        if defaults.string(forKey: MissionZebraDeviceActivityShared.lastEventDateKey) != todayKey {
+            defaults.removeObject(forKey: MissionZebraDeviceActivityShared.deviceActivityUsageKey())
+            defaults.removeObject(forKey: MissionZebraDeviceActivityShared.lastThresholdMinutesKey)
+            defaults.set(todayKey, forKey: MissionZebraDeviceActivityShared.lastEventDateKey)
+            defaults.synchronize()
+        }
     }
 
     override func intervalDidEnd(for activity: DeviceActivityName) {
@@ -28,10 +32,13 @@ final class MissionZebraDeviceActivityMonitor: DeviceActivityMonitor {
 
         let defaults = MissionZebraAppGroup.defaults
         let nowMillis = Int64(Date().timeIntervalSince1970 * 1000)
-        defaults.set(minutes, forKey: MissionZebraDeviceActivityShared.deviceActivityUsageKey())
-        defaults.set(minutes, forKey: MissionZebraDeviceActivityShared.lastThresholdMinutesKey)
+        let usageKey = MissionZebraDeviceActivityShared.deviceActivityUsageKey()
+        let stableMinutes = max(defaults.integer(forKey: usageKey), minutes)
+        defaults.set(stableMinutes, forKey: usageKey)
+        defaults.set(stableMinutes, forKey: MissionZebraDeviceActivityShared.lastThresholdMinutesKey)
         defaults.set(MissionZebraDeviceActivityShared.dateKey(), forKey: MissionZebraDeviceActivityShared.lastEventDateKey)
         defaults.set(nowMillis, forKey: MissionZebraDeviceActivityShared.lastEventAtKey)
+        defaults.synchronize()
     }
 }
 #else

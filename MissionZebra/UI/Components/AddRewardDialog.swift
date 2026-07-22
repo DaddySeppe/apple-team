@@ -71,6 +71,7 @@ struct AddRewardDialog: View {
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     Button("Annuleren", action: onDismiss)
+                        .fontWeight(.semibold)
                 }
                 ToolbarItem(placement: .topBarTrailing) {
                     if children.isEmpty {
@@ -83,6 +84,8 @@ struct AddRewardDialog: View {
                                 Text("Toevoegen")
                             }
                         }
+                        .fontWeight(.bold)
+                        .foregroundStyle(Color.accentColor)
                         .disabled(isSaving)
                     }
                 }

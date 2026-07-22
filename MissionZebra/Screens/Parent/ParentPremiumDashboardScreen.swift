@@ -176,8 +176,12 @@ struct ParentPremiumDashboardScreen: View {
                 errorMessage: purchaseManager.errorMessage,
                 onPurchase: { Task { await purchaseManager.purchase() } },
                 onRestore: { Task { await purchaseManager.restorePurchases() } },
+                onManageSubscriptions: { Task { await purchaseManager.manageSubscriptions() } },
                 onBack: { router.goBack() }
             )
+            .task {
+                await purchaseManager.loadProductsIfNeeded()
+            }
         } else if showIntro {
             PremiumIntroOverlay(
                 avgDailyScreenTime: viewModel.uiState.avgDailyScreenTime,
@@ -195,72 +199,230 @@ struct ParentPremiumDashboardScreen: View {
                 onScreenTime: { router.navigate(to: .parentScreenTimeControl) },
                 onCalendar: { router.navigate(to: .taskCalendar) },
                 onSafety: { router.navigate(to: .parentOnlineSafety) },
+                onManageSubscriptions: { Task { await purchaseManager.manageSubscriptions() } },
                 onBack: { router.goBack() }
             )
         }
     }
 }
 
-private struct PremiumPurchaseContent: View {
+struct PremiumPurchaseContent: View {
+    @Environment(\.mzColors) private var colors
+
     let productPrice: String?
     let isLoading: Bool
     let errorMessage: String?
     let onPurchase: () -> Void
     let onRestore: () -> Void
-    let onBack: () -> Void
+    let onManageSubscriptions: () -> Void
+    let onBack: (() -> Void)?
+
+    private var priceText: String {
+        productPrice.map { "\($0) / maand" } ?? "€1,99 / maand"
+    }
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 18) {
-                Button(action: onBack) {
-                    Label("Terug", systemImage: "arrow.left")
-                }
-                .buttonStyle(.bordered)
-
-                Text("Premium")
-                    .font(.largeTitle)
-                    .fontWeight(.bold)
-
-                Text("Ontgrendel gezinsinzichten, slimme waarschuwingen en kalender-sync.")
-                    .font(.headline)
-                    .foregroundColor(.secondary)
-
-                VStack(alignment: .leading, spacing: 12) {
-                    Label("Weekoverzicht per kind", systemImage: "chart.bar.fill")
-                    Label("Limiet-waarschuwingen voor ouders", systemImage: "bell.badge.fill")
-                    Label("Kalender-sync voor geplande taken", systemImage: "calendar.badge.clock")
-                }
-                .font(.body)
-
-                if let errorMessage {
-                    Text(errorMessage)
-                        .foregroundColor(.red)
-                        .font(.subheadline)
+            VStack(alignment: .leading, spacing: 16) {
+                if let onBack {
+                    Button(action: onBack) {
+                        Label("Terug", systemImage: "arrow.left")
+                    }
+                    .buttonStyle(MZSecondaryButtonStyle())
                 }
 
-                Button(action: onPurchase) {
-                    if isLoading {
-                        ProgressView()
-                            .frame(maxWidth: .infinity)
-                    } else {
-                        Text(productPrice.map { "Start premium - \($0)" } ?? "Start premium")
-                            .frame(maxWidth: .infinity)
+                VStack(alignment: .leading, spacing: 14) {
+                    HStack(alignment: .top, spacing: 12) {
+                        Image(systemName: "sparkles")
+                            .font(.system(size: 30, weight: .bold))
+                            .foregroundColor(Color(red: 0.95, green: 0.67, blue: 0.12))
+                            .frame(width: 46, height: 46)
+                            .background(
+                                RoundedRectangle(cornerRadius: 8)
+                                    .fill(Color(red: 1.0, green: 0.93, blue: 0.72))
+                            )
+
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("MissionZebra Premium")
+                                .font(.largeTitle)
+                                .fontWeight(.bold)
+                                .foregroundColor(colors.onSurface)
+
+                            Text("Meer rust voor ouders, meer duidelijke afspraken voor kinderen.")
+                                .font(.headline)
+                                .foregroundColor(colors.onSurfaceVariant)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                    }
+
+                    HStack(spacing: 10) {
+                        PremiumMetricPreview(value: "7d", label: "weektrends", color: Color(red: 0.18, green: 0.49, blue: 0.20))
+                        PremiumMetricPreview(value: "24/7", label: "signalen", color: Color(red: 0.12, green: 0.38, blue: 0.68))
+                        PremiumMetricPreview(value: "0 ads", label: "voor ouders", color: Color(red: 0.74, green: 0.22, blue: 0.30))
                     }
                 }
-                .buttonStyle(.borderedProminent)
-                .disabled(isLoading)
+                .padding(18)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(colors.surface)
+                        .shadow(color: .black.opacity(0.10), radius: 6, x: 0, y: 3)
+                )
 
-                Button("Aankopen herstellen", action: onRestore)
-                    .buttonStyle(.bordered)
+                VStack(spacing: 10) {
+                    PremiumBenefitRow(
+                        icon: "chart.bar.xaxis",
+                        title: "Zie sneller waar schermtijd oploopt",
+                        message: "Weektrends per kind maken meteen duidelijk wie dicht bij de limiet zit.",
+                        tint: Color(red: 0.12, green: 0.38, blue: 0.68)
+                    )
+                    PremiumBenefitRow(
+                        icon: "bell.badge.fill",
+                        title: "Krijg betere ouder-signalen",
+                        message: "Limieten, beloningen en aandachtspunten komen samen in één overzicht.",
+                        tint: Color(red: 0.74, green: 0.22, blue: 0.30)
+                    )
+                    PremiumBenefitRow(
+                        icon: "calendar.badge.clock",
+                        title: "Plan routines met kalender-sync",
+                        message: "Taken en afspraken passen beter in schooldagen, weekends en gezinsmomenten.",
+                        tint: Color(red: 0.18, green: 0.49, blue: 0.20)
+                    )
+                }
+
+                VStack(alignment: .leading, spacing: 12) {
+                    HStack(alignment: .firstTextBaseline) {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Premium maandplan")
+                                .font(.headline)
+                                .foregroundColor(colors.onSurface)
+                            Text("Opzegbaar via je Apple abonnementen.")
+                                .font(.caption)
+                                .foregroundColor(colors.onSurfaceVariant)
+                        }
+                        Spacer()
+                        Text(priceText)
+                            .font(.title3)
+                            .fontWeight(.bold)
+                            .foregroundColor(colors.onSurface)
+                    }
+
+                    if let errorMessage {
+                        Text(errorMessage)
+                            .foregroundColor(.red)
+                            .font(.subheadline)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+
+                    Button(action: onPurchase) {
+                        if isLoading {
+                            ProgressView()
+                                .frame(maxWidth: .infinity)
+                        } else {
+                            Label("Start Premium", systemImage: "crown.fill")
+                                .frame(maxWidth: .infinity)
+                        }
+                    }
+                    .buttonStyle(MZPrimaryButtonStyle())
                     .disabled(isLoading)
 
-                Text("Aankopen worden met StoreKit geverifieerd en gekoppeld aan het ouderaccount.")
+                    Button(action: onRestore) {
+                        Label("Aankopen herstellen", systemImage: "arrow.clockwise")
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(MZSecondaryButtonStyle())
+                    .disabled(isLoading)
+
+                    Button(action: onManageSubscriptions) {
+                        Label("Abonnement beheren/opzeggen", systemImage: "person.crop.circle.badge.checkmark")
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(MZSecondaryButtonStyle())
+                    .disabled(isLoading)
+
+                    Text("Aankopen worden met StoreKit geverifieerd en gekoppeld aan het ouderaccount.")
+                        .font(.caption)
+                        .foregroundColor(colors.onSurfaceVariant)
+                }
+                .padding(16)
+                .background(
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(colors.surface)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 8)
+                                .stroke(colors.outlineVariant, lineWidth: 1)
+                        )
+                )
+            }
+            .padding(20)
+        }
+        .background(colors.background.ignoresSafeArea())
+    }
+}
+
+private struct PremiumMetricPreview: View {
+    let value: String
+    let label: String
+    let color: Color
+
+    var body: some View {
+        VStack(spacing: 4) {
+            Text(value)
+                .font(.headline)
+                .fontWeight(.bold)
+                .foregroundColor(color)
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
+
+            Text(label)
+                .font(.caption2)
+                .foregroundColor(.secondary)
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 10)
+        .background(
+            RoundedRectangle(cornerRadius: 8)
+                .fill(color.opacity(0.12))
+        )
+    }
+}
+
+private struct PremiumBenefitRow: View {
+    let icon: String
+    let title: String
+    let message: String
+    let tint: Color
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 12) {
+            Image(systemName: icon)
+                .font(.headline)
+                .foregroundColor(tint)
+                .frame(width: 34, height: 34)
+                .background(
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(tint.opacity(0.14))
+                )
+
+            VStack(alignment: .leading, spacing: 3) {
+                Text(title)
+                    .font(.subheadline)
+                    .fontWeight(.bold)
+                Text(message)
                     .font(.caption)
                     .foregroundColor(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
             }
-            .padding(24)
+
+            Spacer(minLength: 0)
         }
-        .background(Color(.systemBackground))
+        .padding(12)
+        .background(
+            RoundedRectangle(cornerRadius: 8)
+                .fill(Color(.secondarySystemBackground))
+        )
     }
 }
 
@@ -323,7 +485,7 @@ struct PremiumIntroOverlay: View {
                     .frame(height: 200)
 
                 Button("Doorgaan", action: onContinue)
-                    .buttonStyle(.borderedProminent)
+                    .buttonStyle(MZPrimaryButtonStyle())
                     .frame(maxWidth: .infinity)
             }
             .padding(24)
@@ -336,6 +498,8 @@ struct PremiumIntroOverlay: View {
 // MARK: - Dashboard Content
 
 struct PremiumDashboardContent: View {
+    @Environment(\.mzColors) private var colors
+
     let children: [PremiumChildData]
     let notifications: [String]
     let avgDailyScreenTime: Int
@@ -343,21 +507,37 @@ struct PremiumDashboardContent: View {
     let onScreenTime: () -> Void
     let onCalendar: () -> Void
     let onSafety: () -> Void
-    let onBack: () -> Void
+    let onManageSubscriptions: () -> Void
+    let onBack: (() -> Void)?
 
     var body: some View {
         ScrollView {
             VStack(spacing: 16) {
-                Text("💎 Premium Ouder Dashboard")
-                    .font(.largeTitle)
+                Text("Premium overzicht")
+                    .font(.title)
                     .fontWeight(.bold)
-                    .foregroundColor(.accentColor)
+                    .foregroundColor(colors.onSurface)
+                    .multilineTextAlignment(.center)
+                    .frame(maxWidth: .infinity)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 12)
+                    .background(
+                        RoundedRectangle(cornerRadius: 14)
+                            .fill(colors.surface)
+                            .shadow(color: .black.opacity(0.12), radius: 4, x: 0, y: 2)
+                    )
 
                 PremiumQuickActions(
                     onScreenTime: onScreenTime,
                     onCalendar: onCalendar,
                     onSafety: onSafety
                 )
+
+                Button(action: onManageSubscriptions) {
+                    Label("Abonnement beheren/opzeggen", systemImage: "person.crop.circle.badge.checkmark")
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(MZSecondaryButtonStyle())
 
                 if !notifications.isEmpty {
                     VStack(alignment: .leading, spacing: 4) {
@@ -381,11 +561,14 @@ struct PremiumDashboardContent: View {
 
                 PremiumOverviewSection(avgDailyScreenTime: avgDailyScreenTime, avgWeekTrend: avgWeekTrend)
 
-                Button("⬅ Terug", action: onBack)
-                    .buttonStyle(.borderedProminent)
+                if let onBack {
+                    Button("⬅ Terug", action: onBack)
+                        .buttonStyle(MZPrimaryButtonStyle())
+                }
             }
             .padding(20)
         }
+        .background(colors.background.ignoresSafeArea())
     }
 }
 
@@ -466,15 +649,18 @@ private struct PremiumQuickActions: View {
         HStack(spacing: 8) {
             Button(action: onScreenTime) {
                 Label("Schermtijd", systemImage: "hourglass")
+                    .frame(maxWidth: .infinity)
             }
             Button(action: onCalendar) {
                 Label("Kalender", systemImage: "calendar")
+                    .frame(maxWidth: .infinity)
             }
             Button(action: onSafety) {
                 Label("Safety", systemImage: "shield")
+                    .frame(maxWidth: .infinity)
             }
         }
-        .buttonStyle(.bordered)
+        .buttonStyle(MZSecondaryButtonStyle())
         .font(.caption)
     }
 }

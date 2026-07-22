@@ -109,6 +109,12 @@ class ParentScreenTimeControlViewModel: ObservableObject {
             ? uiState.editedLimits[childId]!
             : String(child.dailyScreenTimeLimitMinutes)
 
+        saveChildLimit(childId: childId, value: text)
+    }
+
+    func saveChildLimit(childId: String, value: String) {
+        let text = value.trimmingCharacters(in: .whitespacesAndNewlines)
+
         guard let newLimit = Int(text), newLimit > 0 else {
             uiState.error = "Limiet moet groter dan 0 zijn"
             return

@@ -1,6 +1,7 @@
 import SwiftUI
 import FirebaseCore
 import FirebaseMessaging
+import GoogleMobileAds
 import GoogleSignIn
 import UserNotifications
 
@@ -13,6 +14,10 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
     ) -> Bool {
         // Initialize Firebase
         FirebaseApp.configure()
+        MissionZebraAdPrivacy.applyForCurrentDeviceMode()
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+            MobileAds.shared.start()
+        }
 
         // Configure delegates. Permission is requested later from contextual settings/flows.
         UNUserNotificationCenter.current().delegate = self

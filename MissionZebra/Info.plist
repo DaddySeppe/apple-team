@@ -65,5 +65,20 @@
 	</array>
 	<key>GIDClientID</key>
 	<string>202708087532-euvrv9tcaq48dpfcc3pfescs3nt8orjd.apps.googleusercontent.com</string>
+	<key>GADApplicationIdentifier</key>
+	<string>ca-app-pub-5804105308056876~3565804514</string>
+	<key>MZAdMobBannerAdUnitID</key>
+	<string>ca-app-pub-5804105308056876/7359533692</string>
+	<key>MZAdMobInterstitialAdUnitID</key>
+	<string>ca-app-pub-5804105308056876/2252722849</string>
+	<key>MZ_PREMIUM_PRODUCT_IDS</key>
+	<string>premium_monthly</string>
+	<key>SKAdNetworkItems</key>
+	<array>
+		<dict>
+			<key>SKAdNetworkIdentifier</key>
+			<string>cstr6suwn9.skadnetwork</string>
+		</dict>
+	</array>
 </dict>
 </plist>

@@ -1,15 +1,13 @@
 import SwiftUI
-import AuthenticationServices
-import CryptoKit
 import FirebaseAuth
-import FirebaseFirestore
+import FirebaseFunctions
 import GoogleSignIn
-import Security
 
 enum ParentDashboardPage: String, CaseIterable {
     case children = "Kinderen"
     case tasks = "Taken"
     case rewards = "Beloningen"
+    case premium = "Premium"
     case security = "Instellingen"
 
     var icon: String {
@@ -17,30 +15,66 @@ enum ParentDashboardPage: String, CaseIterable {
         case .children: return "person.fill"
         case .tasks: return "list.bullet"
         case .rewards: return "star.fill"
+        case .premium: return "chart.bar.xaxis"
         case .security: return "lock.fill"
         }
     }
+
+    static var visiblePages: [ParentDashboardPage] { allCases }
 }
 
 struct ParentDashboardScreen: View {
     @EnvironmentObject var router: NavigationRouter
     @Environment(\.mzColors) private var colors
+    @Environment(\.scenePhase) private var scenePhase
     @StateObject private var viewModel = ParentDashboardViewModel()
+    @StateObject private var interstitialAd = MissionZebraInterstitialAd()
     @State private var selectedPage: ParentDashboardPage = .children
     @State private var isDeviceForChild = SessionManager.shared.isDeviceForChild()
+    @State private var isSharedChildDevice = SessionManager.shared.isSharedChildDevice()
+    @State private var parentAdRefreshID = UUID()
+    @State private var parentModeReadyForAds = false
+
+    private var shouldShowParentAds: Bool {
+        parentModeReadyForAds && !viewModel.uiState.premiumStatus.isPremium
+    }
 
     var body: some View {
-        TabView(selection: $selectedPage) {
-            ForEach(ParentDashboardPage.allCases, id: \.self) { page in
-                dashboardSurface(for: page)
-                .tabItem {
-                    Image(systemName: page.icon)
-                    Text(page.rawValue)
-                }
-                .tag(page)
+        dashboardSurface(for: selectedPage)
+            .id(selectedPage)
+            .transition(.opacity)
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                bottomChrome
             }
+            .animation(.easeOut(duration: 0.18), value: selectedPage)
+        .onAppear {
+            syncParentMode()
         }
-        .tint(colors.primary)
+        .onChange(of: scenePhase) { phase in
+            guard phase == .active else { return }
+            syncParentMode()
+        }
+        .onChange(of: viewModel.uiState.premiumStatus.isPremium) { _ in
+            reloadParentAdsIfNeeded()
+        }
+    }
+
+    private var bottomChrome: some View {
+        VStack(spacing: 0) {
+            MissionZebraBottomBannerAd(isVisible: shouldShowParentAds)
+                .id(parentAdRefreshID)
+            ParentDashboardBottomBar(
+                selectedPage: $selectedPage,
+                onPageSelected: { page in
+                    interstitialAd.showIfAvailable(isVisible: shouldShowParentAds)
+                }
+            )
+        }
+        .background(
+            Rectangle()
+                .fill(colors.surface)
+                .ignoresSafeArea(edges: .bottom)
+        )
     }
 
     @ViewBuilder
@@ -59,7 +93,7 @@ struct ParentDashboardScreen: View {
 
     @ViewBuilder
     private func pageContent(for page: ParentDashboardPage) -> some View {
-        let header = AnyView(headerContent)
+        let header = AnyView(headerContent(for: page))
 
         switch page {
         case .children:
@@ -71,6 +105,8 @@ struct ParentDashboardScreen: View {
                 onAddChild: { name, limit, birthDate in viewModel.addChild(name: name, limitMinutes: limit, birthDate: birthDate) },
                 onClearAddChildError: { viewModel.clearAddChildError() },
                 onSendMessage: { childId, msg in viewModel.sendMotivationalMessage(childId: childId, message: msg) },
+                showsAds: shouldShowParentAds,
+                onShowInterstitialAd: { interstitialAd.showIfAvailable(isVisible: shouldShowParentAds) },
                 headerContent: header
             )
         case .tasks:
@@ -88,6 +124,8 @@ struct ParentDashboardScreen: View {
                 onRejectTask: { viewModel.rejectTask(taskId: $0) },
                 onUpdateTask: { viewModel.updateTask(task: $0) },
                 onDeleteTask: { viewModel.deleteTask(taskId: $0) },
+                showsAds: shouldShowParentAds,
+                onShowInterstitialAd: { interstitialAd.showIfAvailable(isVisible: shouldShowParentAds) },
                 headerContent: header
             )
         case .rewards:
@@ -102,13 +140,20 @@ struct ParentDashboardScreen: View {
                 onRejectRequestedReward: { viewModel.rejectRewardRequest(rewardId: $0) },
                 onUpdateReward: { viewModel.updateReward(reward: $0) },
                 onDeleteReward: { viewModel.deleteReward(rewardId: $0) },
+                showsAds: shouldShowParentAds,
+                onShowInterstitialAd: { interstitialAd.showIfAvailable(isVisible: shouldShowParentAds) },
                 headerContent: header
             )
+        case .premium:
+            ParentPremiumDashboardTab()
         case .security:
             SecurityPage(
                 familyTimeActive: viewModel.uiState.familyTimeActive,
                 onToggleFamilyTime: { viewModel.toggleFamilyTime() },
-                onGoToPremiumDashboard: { router.navigate(to: .parentPremiumDashboard) },
+                appBlockingEnabled: viewModel.uiState.appBlockingEnabled,
+                isUpdatingAppBlocking: viewModel.uiState.isUpdatingAppBlocking,
+                onSetAppBlockingEnabled: { viewModel.setAppBlockingEnabled($0) },
+                onShowInterstitialAd: { interstitialAd.showIfAvailable(isVisible: shouldShowParentAds) },
                 onLogout: {
                     SessionManager.shared.clearSession()
                     ParentPinManager.shared.clearParentPin()
@@ -117,50 +162,96 @@ struct ParentDashboardScreen: View {
                     router.reset(to: .welcome)
                 },
                 onDeleteAccount: {
-                    try await deleteCurrentParentAccount()
+                    try await deleteCurrentParentAccount(password: $0)
                 },
                 isDeviceForChild: isDeviceForChild,
+                isSharedChildDevice: isSharedChildDevice,
                 onSetDeviceForChild: {
-                    SessionManager.shared.setDeviceForChild(true)
+                    SessionManager.shared.openChildModeFromParent()
+                    MissionZebraAdPrivacy.applyForChildMode()
                     isDeviceForChild = true
+                    isSharedChildDevice = false
+                    router.navigate(to: .childLogin)
+                },
+                onSetSharedChildDevice: {
+                    SessionManager.shared.openSharedChildModeFromParent()
+                    MissionZebraAdPrivacy.applyForChildMode()
+                    isDeviceForChild = true
+                    isSharedChildDevice = true
                     router.navigate(to: .childLogin)
                 },
                 onSetDeviceForParent: {
-                    SessionManager.shared.setDeviceForChild(false)
-                    isDeviceForChild = false
+                    syncParentMode()
                 },
                 onOpenPrivacyPolicy: { router.navigate(to: .privacyPolicy) },
-                onOpenOnlineSafety: { router.navigate(to: .parentOnlineSafety) }
+                onOpenOnlineSafety: { router.navigate(to: .parentOnlineSafety) },
+                headerContent: header
             )
         }
     }
 
     @ViewBuilder
-    private var headerContent: some View {
-        VStack(spacing: 16) {
-            ParentHeaderCard()
+    private func headerContent(for page: ParentDashboardPage) -> some View {
+        switch page {
+        case .children:
+            VStack(spacing: 16) {
+                ParentHeaderCard()
 
-            if !viewModel.uiState.familyInsight.isEmpty {
-                FamilyInsightCard(insight: viewModel.uiState.familyInsight)
-            }
-
-            if !viewModel.uiState.parentTip.isEmpty {
-                ParentTipCard(tip: viewModel.uiState.parentTip)
-            }
-
-            if let variant = viewModel.uiState.premiumNudgeVariant {
-                PremiumNudgeCard(variant: variant) {
-                    router.navigate(to: .parentPremiumDashboard)
+                if !viewModel.uiState.familyInsight.isEmpty {
+                    FamilyInsightCard(insight: viewModel.uiState.familyInsight)
                 }
+
+                if !viewModel.uiState.parentTip.isEmpty {
+                    ParentTipCard(tip: viewModel.uiState.parentTip)
+                }
+
+                if let variant = viewModel.uiState.premiumNudgeVariant {
+                    PremiumNudgeCard(variant: variant) {
+                        router.navigate(to: .parentPremiumDashboard)
+                    }
+                }
+
             }
+            .padding(.horizontal, 20)
+            .padding(.top, 24)
+            .padding(.bottom, 16)
+        case .tasks:
+            ParentPageHeader(title: "Taken", subtitle: "Plan taken, keur inzendingen goed en hou voortgang helder.")
+        case .rewards:
+            ParentPageHeader(title: "Beloningen", subtitle: "Beheer motivatie, aanvragen en ingewisselde beloningen.")
+        case .security:
+            ParentPageHeader(title: "Instellingen", subtitle: "Account, beveiliging, meldingen en toestelmodus.")
+        case .premium:
+            EmptyView()
         }
-        .padding(.horizontal, 20)
-        .padding(.top, 24)
-        .padding(.bottom, 16)
     }
 
-    private func deleteCurrentParentAccount() async throws {
-        guard let user = Auth.auth().currentUser else {
+    private func syncParentMode() {
+        SessionManager.shared.setParentLoggedIn()
+        MissionZebraAdPrivacy.applyForParentMode()
+        isDeviceForChild = false
+        isSharedChildDevice = false
+        parentModeReadyForAds = true
+        reloadParentAdsIfNeeded()
+    }
+
+    private func reloadParentAdsIfNeeded() {
+        parentAdRefreshID = UUID()
+        let session = SessionManager.shared.getRoleSession()
+        print(
+            "[Ads] parent reload",
+            "ready=\(parentModeReadyForAds)",
+            "parentLocal=\(session.isParentLocally)",
+            "premium=\(viewModel.uiState.premiumStatus.isPremium)",
+            "visible=\(shouldShowParentAds)"
+        )
+        DispatchQueue.main.async {
+            interstitialAd.reloadForParentMode(isVisible: shouldShowParentAds)
+        }
+    }
+
+    private func deleteCurrentParentAccount(password: String?) async throws {
+        guard Auth.auth().currentUser != nil else {
             throw NSError(
                 domain: "MissionZebraAccountDeletion",
                 code: -1,
@@ -168,24 +259,13 @@ struct ParentDashboardScreen: View {
             )
         }
 
-        if user.providerData.contains(where: { $0.providerID == "apple.com" }) {
-            let appleCredential = try await AppleAccountDeletionAuthorizer.shared.requestCredential()
-            try await user.reauthenticate(with: appleCredential.credential)
-            try await Auth.auth().revokeToken(withAuthorizationCode: appleCredential.authorizationCode)
-        } else {
-            let token = try await user.getIDTokenResult(forcingRefresh: true)
-            guard Date().timeIntervalSince(token.authDate) < 5 * 60 else {
-                throw NSError(
-                    domain: "MissionZebraAccountDeletion",
-                    code: -2,
-                    userInfo: [NSLocalizedDescriptionKey: "Log opnieuw in en probeer daarna je account te verwijderen."]
-                )
-            }
-        }
+        _ = password
+        _ = try await Functions.functions(region: "europe-west1")
+            .httpsCallable("deleteParentAccount")
+            .call([:])
 
-        try await deleteParentFirestoreData(parentUid: user.uid)
         ParentPinManager.shared.clearParentPin()
-        try await user.delete()
+        try? Auth.auth().signOut()
         GIDSignIn.sharedInstance.signOut()
 
         await MainActor.run {
@@ -193,30 +273,132 @@ struct ParentDashboardScreen: View {
             router.reset(to: .welcome)
         }
     }
+}
 
-    private func deleteParentFirestoreData(parentUid: String) async throws {
-        let firestore = Firestore.firestore()
-        let parentRef = firestore.collection("parents").document(parentUid)
+private struct ParentPageHeader: View {
+    @Environment(\.mzColors) private var colors
+    let title: String
+    let subtitle: String
 
-        let childrenSnapshot = try await parentRef.collection("children").getDocuments()
-        for childDocument in childrenSnapshot.documents {
-            try await deleteCollection(childDocument.reference.collection("screenSessions"))
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(title)
+                .font(.title2)
+                .fontWeight(.heavy)
+                .foregroundStyle(colors.onSurface)
+
+            Text(subtitle)
+                .font(.subheadline)
+                .fontWeight(.medium)
+                .foregroundColor(colors.onSurfaceVariant)
         }
-
-        try await deleteCollection(parentRef.collection("tasks"))
-        try await deleteCollection(parentRef.collection("rewards"))
-        try await deleteCollection(parentRef.collection("children"))
-        try await parentRef.delete()
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, 20)
+        .padding(.top, 24)
+        .padding(.bottom, 16)
     }
+}
 
-    private func deleteCollection(_ collection: CollectionReference, batchSize: Int = 400) async throws {
-        while true {
-            let snapshot = try await collection.limit(to: batchSize).getDocuments()
-            guard !snapshot.documents.isEmpty else { return }
+private struct ParentDashboardBottomBar: View {
+    @Environment(\.mzColors) private var colors
+    @Binding var selectedPage: ParentDashboardPage
+    let onPageSelected: (ParentDashboardPage) -> Void
 
-            let batch = Firestore.firestore().batch()
-            snapshot.documents.forEach { batch.deleteDocument($0.reference) }
-            try await batch.commit()
+    var body: some View {
+        HStack(spacing: 0) {
+            ForEach(ParentDashboardPage.visiblePages, id: \.self) { page in
+                Button {
+                    guard selectedPage != page else { return }
+                    selectedPage = page
+                    onPageSelected(page)
+                } label: {
+                    ParentDashboardTabItem(
+                        page: page,
+                        isSelected: selectedPage == page
+                    )
+                }
+                .buttonStyle(.plain)
+                .frame(maxWidth: .infinity)
+                .accessibilityLabel(page.rawValue)
+                .accessibilityAddTraits(selectedPage == page ? .isSelected : .isButton)
+            }
+        }
+        .padding(.horizontal, 10)
+        .padding(.top, 8)
+        .padding(.bottom, 10)
+        .background(
+            Rectangle()
+                .fill(colors.surface)
+                .overlay(alignment: .top) {
+                    Rectangle()
+                        .fill(colors.outlineVariant.opacity(0.65))
+                        .frame(height: 1)
+                }
+        )
+    }
+}
+
+private struct ParentDashboardTabItem: View {
+    @Environment(\.mzColors) private var colors
+
+    let page: ParentDashboardPage
+    let isSelected: Bool
+
+    var body: some View {
+        VStack(spacing: 4) {
+            Image(systemName: page.icon)
+                .font(.system(size: 21, weight: isSelected ? .bold : .semibold))
+                .symbolRenderingMode(.hierarchical)
+
+            Text(page.rawValue)
+                .font(.caption2.weight(isSelected ? .bold : .semibold))
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
+        }
+        .foregroundColor(isSelected ? colors.primary : colors.onSurface.opacity(0.82))
+        .frame(height: 54)
+        .frame(maxWidth: .infinity)
+        .contentShape(Rectangle())
+        .background {
+            if isSelected {
+                Capsule()
+                    .fill(colors.primary.opacity(0.13))
+            }
+        }
+    }
+}
+
+private struct ParentPremiumDashboardTab: View {
+    @EnvironmentObject var router: NavigationRouter
+    @StateObject private var viewModel = ParentPremiumDashboardViewModel()
+    @StateObject private var purchaseManager = PremiumPurchaseManager()
+
+    var body: some View {
+        if PremiumFeatureGate.canAccessPremiumDashboard(status: viewModel.uiState.premiumStatus) {
+            PremiumDashboardContent(
+                children: viewModel.uiState.children,
+                notifications: viewModel.uiState.notifications,
+                avgDailyScreenTime: viewModel.uiState.avgDailyScreenTime,
+                avgWeekTrend: viewModel.uiState.avgWeekTrend,
+                onScreenTime: { router.navigate(to: .parentScreenTimeControl) },
+                onCalendar: { router.navigate(to: .taskCalendar) },
+                onSafety: { router.navigate(to: .parentOnlineSafety) },
+                onManageSubscriptions: { Task { await purchaseManager.manageSubscriptions() } },
+                onBack: nil
+            )
+        } else {
+            PremiumPurchaseContent(
+                productPrice: purchaseManager.product?.displayPrice,
+                isLoading: purchaseManager.isLoading,
+                errorMessage: purchaseManager.errorMessage,
+                onPurchase: { Task { await purchaseManager.purchase() } },
+                onRestore: { Task { await purchaseManager.restorePurchases() } },
+                onManageSubscriptions: { Task { await purchaseManager.manageSubscriptions() } },
+                onBack: nil
+            )
+            .task {
+                await purchaseManager.loadProductsIfNeeded()
+            }
         }
     }
 }
@@ -270,133 +452,6 @@ private struct PremiumNudgeCard: View {
             .background(RoundedRectangle(cornerRadius: 12).fill(Color(.secondarySystemBackground)))
         }
         .buttonStyle(.plain)
-    }
-}
-
-private struct AppleDeletionCredential {
-    let credential: AuthCredential
-    let authorizationCode: String
-}
-
-private final class AppleAccountDeletionAuthorizer: NSObject, ASAuthorizationControllerDelegate, ASAuthorizationControllerPresentationContextProviding {
-    static let shared = AppleAccountDeletionAuthorizer()
-
-    private var continuation: CheckedContinuation<AppleDeletionCredential, Error>?
-    private var currentNonce: String?
-
-    func requestCredential() async throws -> AppleDeletionCredential {
-        guard continuation == nil else {
-            throw NSError(
-                domain: "MissionZebraAccountDeletion",
-                code: -3,
-                userInfo: [NSLocalizedDescriptionKey: "Er loopt al een verwijderactie."]
-            )
-        }
-
-        let nonce = try AccountDeletionNonce.randomNonceString()
-        currentNonce = nonce
-
-        return try await withCheckedThrowingContinuation { continuation in
-            self.continuation = continuation
-
-            let provider = ASAuthorizationAppleIDProvider()
-            let request = provider.createRequest()
-            request.requestedScopes = [.fullName, .email]
-            request.nonce = AccountDeletionNonce.sha256(nonce)
-
-            let controller = ASAuthorizationController(authorizationRequests: [request])
-            controller.delegate = self
-            controller.presentationContextProvider = self
-            controller.performRequests()
-        }
-    }
-
-    func authorizationController(controller: ASAuthorizationController, didCompleteWithAuthorization authorization: ASAuthorization) {
-        guard let continuation else { return }
-        defer { reset() }
-
-        guard let nonce = currentNonce,
-              let appleCredential = authorization.credential as? ASAuthorizationAppleIDCredential,
-              let identityToken = appleCredential.identityToken,
-              let idToken = String(data: identityToken, encoding: .utf8),
-              let authorizationCode = appleCredential.authorizationCode,
-              let authorizationCodeString = String(data: authorizationCode, encoding: .utf8) else {
-            continuation.resume(throwing: NSError(
-                domain: "MissionZebraAccountDeletion",
-                code: -4,
-                userInfo: [NSLocalizedDescriptionKey: "Apple bevestiging is niet gelukt. Probeer opnieuw."]
-            ))
-            return
-        }
-
-        let credential = OAuthProvider.credential(
-            providerID: .apple,
-            idToken: idToken,
-            rawNonce: nonce
-        )
-
-        continuation.resume(returning: AppleDeletionCredential(
-            credential: credential,
-            authorizationCode: authorizationCodeString
-        ))
-    }
-
-    func authorizationController(controller: ASAuthorizationController, didCompleteWithError error: Error) {
-        guard let continuation else { return }
-        defer { reset() }
-
-        if let authorizationError = error as? ASAuthorizationError,
-           authorizationError.code == .canceled {
-            continuation.resume(throwing: NSError(
-                domain: "MissionZebraAccountDeletion",
-                code: -5,
-                userInfo: [NSLocalizedDescriptionKey: "Account verwijderen is geannuleerd."]
-            ))
-            return
-        }
-
-        continuation.resume(throwing: error)
-    }
-
-    func presentationAnchor(for controller: ASAuthorizationController) -> ASPresentationAnchor {
-        UIApplication.shared.connectedScenes
-            .compactMap { $0 as? UIWindowScene }
-            .flatMap(\.windows)
-            .first { $0.isKeyWindow } ?? ASPresentationAnchor()
-    }
-
-    private func reset() {
-        continuation = nil
-        currentNonce = nil
-    }
-}
-
-private enum AccountDeletionNonce {
-    enum NonceError: Error {
-        case generationFailed(OSStatus)
-    }
-
-    static func randomNonceString(length: Int = 32) throws -> String {
-        precondition(length > 0)
-
-        var randomBytes = [UInt8](repeating: 0, count: length)
-        let status = SecRandomCopyBytes(kSecRandomDefault, randomBytes.count, &randomBytes)
-
-        guard status == errSecSuccess else {
-            throw NonceError.generationFailed(status)
-        }
-
-        let charset = Array("0123456789ABCDEFGHIJKLMNOPQRSTUVXYZabcdefghijklmnopqrstuvwxyz-._")
-        let nonce = randomBytes.map { charset[Int($0) % charset.count] }
-
-        return String(nonce)
-    }
-
-    static func sha256(_ input: String) -> String {
-        let inputData = Data(input.utf8)
-        let hashedData = SHA256.hash(data: inputData)
-
-        return hashedData.map { String(format: "%02x", $0) }.joined()
     }
 }
 

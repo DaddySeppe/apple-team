@@ -14,6 +14,9 @@ struct PremiumStatus: Equatable {
 }
 
 final class PremiumRepository {
+    private static let localStoreKitPremiumUntilKey = "MissionZebra.localStoreKitPremiumUntil"
+    private static let localStoreKitPremiumUntilKeyPrefix = "MissionZebra.localStoreKitPremiumUntil."
+
     private let auth = Auth.auth()
     private let firestore = Firestore.firestore()
     private let functions = Functions.functions(region: "europe-west1")
@@ -24,6 +27,8 @@ final class PremiumRepository {
         guard let user = auth.currentUser else {
             return Just(PremiumStatus()).eraseToAnyPublisher()
         }
+
+        Self.clearLegacyLocalPremiumCache(userUid: user.uid)
 
         var lastKnownStatus = PremiumStatus()
         let listener = firestore.collection("parents").document(user.uid)
@@ -59,6 +64,16 @@ final class PremiumRepository {
 
     private static func nowMillis() -> Int64 {
         Int64(Date().timeIntervalSince1970 * 1000)
+    }
+
+    private static func clearLegacyLocalPremiumCache(userUid: String) {
+        let defaults = UserDefaults.standard
+        defaults.removeObject(forKey: localStoreKitPremiumUntilKey)
+        defaults.removeObject(forKey: localStoreKitPremiumUntilKey(for: userUid))
+    }
+
+    private static func localStoreKitPremiumUntilKey(for userUid: String) -> String {
+        "\(localStoreKitPremiumUntilKeyPrefix)\(userUid)"
     }
 
     func verifyApplePremiumPurchase(

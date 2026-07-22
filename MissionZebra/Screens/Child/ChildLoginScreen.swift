@@ -2,70 +2,138 @@ import SwiftUI
 
 struct ChildLoginScreen: View {
     @EnvironmentObject var router: NavigationRouter
+    @Environment(\.mzColors) private var colors
     @StateObject private var viewModel = ChildLoginViewModel()
+    @State private var showParentPinSheet = false
+    @State private var parentPinDestination: AppRoute = .parentDashboard
 
     var body: some View {
-        VStack(spacing: 0) {
-            VStack(alignment: .leading) {
-                Button(action: {
-                    router.reset(to: .welcome)
-                }) {
-                    Text("⬅ Terug")
-                }
-                .padding(.bottom, 12)
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-
-            Text("Ik ben kind")
-                .font(.largeTitle)
-                .fontWeight(.bold)
-                .foregroundColor(.accentColor)
-                .multilineTextAlignment(.center)
-
-            Spacer().frame(height: 8)
-
-            Text("Kies je naam om verder te gaan.")
-                .font(.body)
-
-            Spacer().frame(height: 16)
-
-            if viewModel.uiState.isLoading {
-                Text("Laden...")
-                    .font(.subheadline)
-            } else {
-                if viewModel.uiState.children.isEmpty {
-                    Text("Er zijn nog geen kinderen toegevoegd.")
-                        .font(.subheadline)
-                        .multilineTextAlignment(.center)
+        ChildZebraPhotoBackgroundView {
+            VStack(spacing: 18) {
+                HStack {
+                    Button(action: goBackFromChildSelection) {
+                        Label("Ouderomgeving", systemImage: "arrow.left")
+                    }
+                    .buttonStyle(MZSecondaryButtonStyle())
 
                     Spacer()
+                }
+
+                VStack(spacing: 8) {
+                    Text("Ik ben kind")
+                        .font(.largeTitle.weight(.black))
+                        .foregroundColor(.white)
+                        .multilineTextAlignment(.center)
+                        .shadow(color: .black.opacity(0.35), radius: 8, x: 0, y: 3)
+
+                    Text("Kies je naam om verder te gaan.")
+                        .font(.body.weight(.semibold))
+                        .foregroundColor(.white.opacity(0.92))
+                        .multilineTextAlignment(.center)
+                }
+                .padding(.top, 6)
+
+                if viewModel.uiState.isLoading {
+                    ProgressView("Laden...")
+                        .padding(18)
+                        .frame(maxWidth: .infinity)
+                        .background(RoundedRectangle(cornerRadius: 14).fill(colors.surface))
                 } else {
-                    ScrollView {
-                        LazyVStack(spacing: 8) {
-                            ForEach(viewModel.uiState.children) { child in
-                                ChildSelectCard(child: child) {
-                                    SessionManager.shared.setChildLoggedIn(childId: child.id, childName: child.name)
-                                    router.reset(to: .childDashboard(childId: child.id, childName: child.name))
+                    if viewModel.uiState.children.isEmpty {
+                        VStack(spacing: 10) {
+                            Text("Er zijn nog geen kinderen toegevoegd.")
+                                .font(.headline)
+                            Text("Ga even naar de ouderomgeving om een kind toe te voegen.")
+                                .font(.subheadline)
+                                .foregroundColor(colors.onSurfaceVariant)
+                                .multilineTextAlignment(.center)
+                        }
+                        .padding(18)
+                        .frame(maxWidth: .infinity)
+                        .background(RoundedRectangle(cornerRadius: 14).fill(colors.surface))
+                    } else {
+                        ScrollView {
+                            LazyVStack(spacing: 10) {
+                                ForEach(viewModel.uiState.children) { child in
+                                    ChildSelectCard(child: child) {
+                                        SessionManager.shared.setChildLoggedIn(childId: child.id, childName: child.name)
+                                        MissionZebraAdPrivacy.applyForChildMode()
+                                        router.reset(to: .childDashboard(childId: child.id, childName: child.name))
+                                    }
                                 }
                             }
+                            .padding(.vertical, 4)
                         }
                     }
 
-                    Spacer().frame(height: 16)
+                    Button(action: {
+                        requestParentAccess(destination: .parentScreenTimeControl)
+                    }) {
+                        Label("Nieuw kind toevoegen", systemImage: "plus")
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(MZPrimaryButtonStyle())
                 }
-
-                Button(action: {
-                    router.navigate(to: .parentScreenTimeControl)
-                }) {
-                    Text("Nieuw kind toevoegen")
-                        .frame(maxWidth: .infinity)
-                }
-                .buttonStyle(.borderedProminent)
+            }
+            .padding(20)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+        .sheet(isPresented: $showParentPinSheet) {
+            ParentPinGateSheet(
+                title: "Ouder-PIN",
+                message: "Voer je 4-cijferige PIN in om naar de ouderomgeving te gaan."
+            ) {
+                continueAsParent(to: parentPinDestination)
             }
         }
-        .padding(20)
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color(.systemBackground))
+    }
+
+    private func goBackFromChildSelection() {
+        if SessionManager.shared.hasParentSession() || SessionManager.shared.getRoleSession().firebaseUid != nil {
+            SessionManager.shared.setParentLoggedIn()
+            MissionZebraAdPrivacy.applyForParentMode()
+            router.reset(to: .parentDashboard)
+        } else {
+            router.reset(to: .parentDashboard)
+        }
+    }
+
+    private func requestParentAccess(destination: AppRoute) {
+        parentPinDestination = destination
+
+        if ParentPinManager.shared.hasParentPin() {
+            showParentPinSheet = true
+            return
+        }
+
+        Task {
+            let remotePinConfigured = await ParentPinManager.shared.refreshParentPinConfigured()
+            await MainActor.run {
+                let session = SessionManager.shared.getRoleSession()
+                if session.isLoggedIn {
+                    continueAsParent(to: destination)
+                } else if remotePinConfigured || session.firebaseUid == nil {
+                    router.reset(to: .parentLogin)
+                } else {
+                    continueAsParent(to: destination)
+                }
+            }
+        }
+    }
+
+    private func continueAsParent(to destination: AppRoute) {
+        SessionManager.shared.setParentLoggedIn()
+        MissionZebraAdPrivacy.applyForParentMode()
+
+        switch destination {
+        case .parentScreenTimeControl:
+            router.reset(to: .parentDashboard)
+            DispatchQueue.main.async {
+                router.navigate(to: .parentScreenTimeControl)
+            }
+        default:
+            router.reset(to: .parentDashboard)
+        }
     }
 }
 
@@ -88,7 +156,7 @@ private struct ChildSelectCard: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(16)
-            .background(RoundedRectangle(cornerRadius: 12).fill(Color(.secondarySystemBackground)).shadow(radius: 2))
+            .background(RoundedRectangle(cornerRadius: 12).fill(Color(.systemBackground)).shadow(radius: 4))
         }
         .buttonStyle(.plain)
     }

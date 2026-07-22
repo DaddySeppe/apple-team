@@ -8,12 +8,12 @@ enum RouteRedirect: Equatable {
 
 enum RouteGuardPolicy {
     static func parentRedirect(session: RoleSession, hasParentPin: Bool) -> RouteRedirect? {
-        if session.isParent && hasParentPin { return nil }
-        return session.firebaseUid == nil ? .welcome : .parentLogin
+        if session.isParentLocally && hasParentPin { return nil }
+        return .parentLogin
     }
 
     static func childDashboardRedirect(session: RoleSession) -> RouteRedirect? {
-        if session.isChild { return nil }
-        return session.firebaseUid == nil ? .welcome : .childLogin
+        if session.isChildLocally, let childId = session.childId, !childId.isEmpty { return nil }
+        return .childLogin
     }
 }

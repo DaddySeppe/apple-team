@@ -13,9 +13,12 @@ struct RewardsPage: View {
     let onRejectRequestedReward: (String) -> Void
     let onUpdateReward: (Reward) -> Void
     let onDeleteReward: (String) -> Void
+    let showsAds: Bool
+    let onShowInterstitialAd: () -> Void
     let headerContent: AnyView
 
     @State private var showAddRewardDialog = false
+    @State private var wasSavingReward = false
 
     private var filteredRewards: [Reward] {
         if let filterId = uiState.selectedRewardFilterChildId {
@@ -34,9 +37,6 @@ struct RewardsPage: View {
                 // 1. Header & Intro
                 headerContent
 
-                DashboardHeaderCardView()
-                    .padding(.bottom, 16)
-
                 TipCardView(
                     icon: "lightbulb",
                     title: "Tip: Populaire beloningen",
@@ -46,7 +46,10 @@ struct RewardsPage: View {
                 Spacer().frame(height: 24)
 
                 // 2. Primary Action
-                Button(action: { showAddRewardDialog = true }) {
+                Button(action: {
+                    onShowInterstitialAd()
+                    showAddRewardDialog = true
+                }) {
                     HStack {
                         Image(systemName: "plus")
                         Text("Nieuwe beloning toevoegen")
@@ -55,7 +58,7 @@ struct RewardsPage: View {
                     .frame(maxWidth: .infinity)
                     .frame(height: 50)
                 }
-                .buttonStyle(.borderedProminent)
+                .buttonStyle(MZPrimaryButtonStyle())
                 .padding(.horizontal, 16)
 
                 Spacer().frame(height: 24)
@@ -82,13 +85,15 @@ struct RewardsPage: View {
                             onRedeem: { onRedeemReward(reward.id) },
                             onUpdateReward: onUpdateReward,
                             onDeleteReward: onDeleteReward,
-                            onRejectRequest: { onRejectRequestedReward(reward.id) }
+                            onRejectRequest: { onRejectRequestedReward(reward.id) },
+                            onShowInterstitialAd: onShowInterstitialAd
                         )
                     }
                 }
 
                 // 5. Beschikbare Beloningen
                 Spacer().frame(height: 24)
+
                 SectionHeaderView(title: "Beschikbaar (\(activeRewards.count))", icon: "trophy")
 
                 if activeRewards.isEmpty {
@@ -100,7 +105,8 @@ struct RewardsPage: View {
                             children: uiState.children,
                             onRedeem: {},
                             onUpdateReward: onUpdateReward,
-                            onDeleteReward: onDeleteReward
+                            onDeleteReward: onDeleteReward,
+                            onShowInterstitialAd: onShowInterstitialAd
                         )
                     }
                 }
@@ -118,7 +124,8 @@ struct RewardsPage: View {
                             children: uiState.children,
                             onRedeem: {},
                             onUpdateReward: onUpdateReward,
-                            onDeleteReward: onDeleteReward
+                            onDeleteReward: onDeleteReward,
+                            onShowInterstitialAd: onShowInterstitialAd
                         )
                     }
                 }
@@ -137,33 +144,25 @@ struct RewardsPage: View {
                 onChildSelected: onRewardChildSelected,
                 onTitleChange: onNewRewardTitleChange,
                 onPointsChange: onNewRewardPointsChange,
-                onAddClick: onAddRewardClick,
+                onAddClick: {
+                    onAddRewardClick()
+                },
                 onDismiss: { showAddRewardDialog = false }
             )
+        }
+        .onChange(of: uiState.isSavingReward) { isSaving in
+            if wasSavingReward && !isSaving && uiState.rewardError == nil {
+                showAddRewardDialog = false
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+                    onShowInterstitialAd()
+                }
+            }
+            wasSavingReward = isSaving
         }
     }
 }
 
 // MARK: - Components
-
-struct DashboardHeaderCardView: View {
-    var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text("Ouder Dashboard")
-                .font(.title2)
-                .fontWeight(.bold)
-                .foregroundColor(.accentColor)
-
-            Text("Beheer beloningen en motivatie op één plek.")
-                .font(.subheadline)
-                .foregroundColor(.secondary)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(20)
-        .background(RoundedRectangle(cornerRadius: 16).fill(Color(.systemBackground)).shadow(radius: 2))
-        .padding(.horizontal, 16)
-    }
-}
 
 struct TipCardView: View {
     let icon: String
@@ -290,6 +289,7 @@ struct ParentRewardCardModern: View {
     let onUpdateReward: (Reward) -> Void
     let onDeleteReward: (String) -> Void
     var onRejectRequest: (() -> Void)?
+    let onShowInterstitialAd: () -> Void
 
     @State private var showEditDialog = false
     @State private var showDeleteDialog = false
@@ -335,7 +335,10 @@ struct ParentRewardCardModern: View {
             // Status Actions
             if reward.requested && !reward.redeemed, let reject = onRejectRequest {
                 HStack {
-                    Button(action: { showEditDialog = true }) {
+                    Button(action: {
+                        onShowInterstitialAd()
+                        showEditDialog = true
+                    }) {
                         Image(systemName: "pencil")
                             .font(.caption)
                             .foregroundColor(.secondary)
@@ -344,21 +347,30 @@ struct ParentRewardCardModern: View {
 
                     Spacer()
 
-                    Button("Afwijzen", action: reject)
+                    Button("Afwijzen") {
+                        onShowInterstitialAd()
+                        reject()
+                    }
                         .font(.caption)
                         .foregroundColor(.red)
-                        .buttonStyle(.bordered)
+                        .buttonStyle(MZSecondaryButtonStyle())
 
-                    Button("Goedkeuren", action: onRedeem)
+                    Button("Goedkeuren") {
+                        onShowInterstitialAd()
+                        onRedeem()
+                    }
                         .font(.caption)
-                        .buttonStyle(.borderedProminent)
+                        .buttonStyle(MZPrimaryButtonStyle())
                         .tint(.purple)
                 }
                 .padding(.top, 16)
             } else if !reward.redeemed {
                 HStack {
                     Spacer()
-                    Button(action: { showEditDialog = true }) {
+                    Button(action: {
+                        onShowInterstitialAd()
+                        showEditDialog = true
+                    }) {
                         Image(systemName: "pencil")
                             .font(.caption)
                             .foregroundColor(.secondary)
@@ -390,7 +402,10 @@ struct ParentRewardCardModern: View {
         .padding(.horizontal, 16)
         .padding(.vertical, 6)
         .alert("Verwijderen", isPresented: $showDeleteDialog) {
-            Button("Verwijderen", role: .destructive) { onDeleteReward(reward.id) }
+            Button("Verwijderen", role: .destructive) {
+                onShowInterstitialAd()
+                onDeleteReward(reward.id)
+            }
             Button("Annuleren", role: .cancel) {}
         } message: {
             Text("Zeker weten?")

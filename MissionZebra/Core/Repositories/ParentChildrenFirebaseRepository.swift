@@ -42,9 +42,13 @@ class ParentChildrenFirebaseRepository: ObservableObject {
                     todayKey: today
                 )
 
-                let configuredLimitMinutes = data["dailyScreenTimeLimitMinutes"] != nil
+                let rawConfiguredLimitMinutes = data["dailyScreenTimeLimitMinutes"] != nil
                     ? FirestoreDecoding.int(data["dailyScreenTimeLimitMinutes"], default: 60)
                     : FirestoreDecoding.int(data["screenTimeLimitMinutes"], default: 60)
+                let lastValidLimitMinutes = FirestoreDecoding.int(data["lastValidDailyScreenTimeLimitMinutes"], default: 60)
+                let configuredLimitMinutes = rawConfiguredLimitMinutes > 0
+                    ? rawConfiguredLimitMinutes
+                    : ScreenTimeDefaults.sanitizedLimit(lastValidLimitMinutes)
                 let screenTimeSchedule = ScreenTimeSchedule.fromFirestore(data["screenTimeSchedule"])
                 let limitMinutes = screenTimeSchedule.effectiveLimitMinutes(defaultLimitMinutes: configuredLimitMinutes)
 
@@ -120,9 +124,16 @@ class ParentChildrenFirebaseRepository: ObservableObject {
             guard let user = auth.currentUser else {
                 throw NSError(domain: "", code: -1, userInfo: [NSLocalizedDescriptionKey: "Niet ingelogd"])
             }
+            let sanitizedLimit = ScreenTimeDefaults.sanitizedLimit(newLimitMinutes)
             try await firestore.collection("parents").document(user.uid)
                 .collection("children").document(childId)
-                .updateData(["dailyScreenTimeLimitMinutes": newLimitMinutes])
+                .updateData([
+                    "dailyScreenTimeLimitMinutes": sanitizedLimit,
+                    "lastValidDailyScreenTimeLimitMinutes": sanitizedLimit,
+                    "screenTimeSchedule.schoolDayLimitMinutes": sanitizedLimit,
+                    "screenTimeSchedule.weekendLimitMinutes": sanitizedLimit,
+                    "screenTimeSchedule.vacationLimitMinutes": sanitizedLimit
+                ])
             return .success(())
         } catch {
             return .failure(error)
@@ -134,12 +145,14 @@ class ParentChildrenFirebaseRepository: ObservableObject {
             guard let user = auth.currentUser else {
                 throw NSError(domain: "", code: -1, userInfo: [NSLocalizedDescriptionKey: "Niet ingelogd"])
             }
+            let sanitizedLimit = ScreenTimeDefaults.sanitizedLimit(limitMinutes)
             _ = try await childrenCollection(user.uid).addDocument(data: [
                 "name": name,
                 "birthDate": birthDate ?? NSNull(),
                 "points": 0,
                 "dailyScreenTimeUsedMinutes": 0,
-                "dailyScreenTimeLimitMinutes": limitMinutes,
+                "dailyScreenTimeLimitMinutes": sanitizedLimit,
+                "lastValidDailyScreenTimeLimitMinutes": sanitizedLimit,
                 "isBlocked": false,
                 "screenTimeSchedule": ScreenTimeSchedule().toFirestoreMap(),
                 "isTutorial": isTutorial,
@@ -221,7 +234,14 @@ class ParentChildrenFirebaseRepository: ObservableObject {
 
                 var existingDeviceTimes = FirestoreDecoding.intMap(snapshot.data()?["deviceScreenTimes"])
                 let existingDeviceDates = FirestoreDecoding.stringMap(snapshot.data()?["deviceScreenTimeDates"])
-                existingDeviceTimes[deviceSession.deviceId] = minutes
+                let existingMinutesForDevice = existingDeviceDates[deviceSession.deviceId] == dateKey
+                    ? existingDeviceTimes[deviceSession.deviceId] ?? 0
+                    : 0
+                let isChildAttributedScreenTime = source == "DEVICE_ACTIVITY_CHILD_ATTRIBUTED"
+                let stableMinutes = isChildAttributedScreenTime
+                    ? max(minutes, 0)
+                    : max(existingMinutesForDevice, minutes)
+                existingDeviceTimes[deviceSession.deviceId] = stableMinutes
 
                 let totalMinutes = existingDeviceTimes.reduce(0) { total, entry in
                     if entry.key == deviceSession.deviceId || existingDeviceDates[entry.key] == dateKey {
@@ -233,7 +253,7 @@ class ParentChildrenFirebaseRepository: ObservableObject {
                 transaction.updateData([
                     "dailyScreenTimeUsedMinutes": totalMinutes,
                     "screenTimeHistory.\(dateKey)": totalMinutes,
-                    "deviceScreenTimes.\(deviceSession.deviceId)": minutes,
+                    "deviceScreenTimes.\(deviceSession.deviceId)": stableMinutes,
                     "deviceNames.\(deviceSession.deviceId)": deviceSession.deviceName,
                     "deviceScreenTimeDates.\(deviceSession.deviceId)": dateKey,
                     "screenTimeSource": source,
@@ -241,26 +261,6 @@ class ParentChildrenFirebaseRepository: ObservableObject {
                 ], forDocument: childRef)
                 return nil
             }
-            return .success(())
-        } catch {
-            return .failure(error)
-        }
-    }
-
-    func updateAppForegroundUsage(childId: String, minutes: Int, source: String) async -> Result<Void, Error> {
-        do {
-            guard let user = auth.currentUser else {
-                throw NSError(domain: "", code: -1, userInfo: [NSLocalizedDescriptionKey: "Niet ingelogd"])
-            }
-            let deviceSession = SessionManager.shared.getDeviceSession()
-            try await childrenCollection(user.uid).document(childId).setData([
-                "appForegroundUsageMinutes": minutes,
-                "appForegroundUsageDeviceId": deviceSession.deviceId,
-                "appForegroundUsageDeviceName": deviceSession.deviceName,
-                "appForegroundUsageDate": Self.todayKey(),
-                "screenTimeSource": source,
-                "screenTimePermissionGranted": false
-            ], merge: true)
             return .success(())
         } catch {
             return .failure(error)

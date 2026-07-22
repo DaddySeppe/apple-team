@@ -10,6 +10,8 @@ struct ChildrenPage: View {
     let onAddChild: (String, Int, String?) -> Void
     let onClearAddChildError: () -> Void
     let onSendMessage: (String, String) -> Void
+    let showsAds: Bool
+    let onShowInterstitialAd: () -> Void
     let headerContent: AnyView
 
     @State private var showManageDialog = false
@@ -27,14 +29,17 @@ struct ChildrenPage: View {
 
                     Spacer()
 
-                    Button(action: { showManageDialog = true }) {
+                    Button(action: {
+                        onShowInterstitialAd()
+                        showManageDialog = true
+                    }) {
                         HStack(spacing: 8) {
                             Image(systemName: "gearshape")
                                 .font(.caption)
                             Text("Beheren")
                         }
                     }
-                    .buttonStyle(.bordered)
+                    .buttonStyle(MZSecondaryButtonStyle())
                 }
                 .padding(.horizontal, 16)
 
@@ -44,13 +49,19 @@ struct ChildrenPage: View {
                     VStack(spacing: 16) {
                         InfoCardView(message: "Je hebt nog geen kinderen toegevoegd.")
 
-                        Button("Nu toevoegen") { showManageDialog = true }
-                            .buttonStyle(.borderedProminent)
+                        Button("Nu toevoegen") {
+                            onShowInterstitialAd()
+                            showManageDialog = true
+                        }
+                            .buttonStyle(MZPrimaryButtonStyle())
                     }
                     .padding(32)
                 } else {
                     ForEach(children) { child in
-                        ChildCardView(child: child, onClick: { showMessageDialogForChildId = child.id })
+                        ChildCardView(child: child, onClick: {
+                            onShowInterstitialAd()
+                            showMessageDialogForChildId = child.id
+                        })
                             .padding(.horizontal, 16)
                             .padding(.vertical, 4)
                     }
@@ -68,7 +79,9 @@ struct ChildrenPage: View {
                 onDeleteChild: onDeleteChild,
                 isAdding: isAddingChild,
                 addChildError: addChildError,
-                onClearError: onClearAddChildError
+                onClearError: onClearAddChildError,
+                showsAds: showsAds,
+                onShowInterstitialAd: onShowInterstitialAd
             )
         }
         .sheet(isPresented: Binding(
@@ -79,6 +92,7 @@ struct ChildrenPage: View {
                 ParentMessageDialog(
                     onDismiss: { showMessageDialogForChildId = nil },
                     onSend: { msg in
+                        onShowInterstitialAd()
                         onSendMessage(childId, msg)
                         showMessageDialogForChildId = nil
                     }

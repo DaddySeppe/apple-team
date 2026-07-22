@@ -13,6 +13,9 @@ packages:
   GoogleSignIn:
     url: https://github.com/google/GoogleSignIn-iOS
     version: "7.0.0"
+  GoogleMobileAds:
+    url: https://github.com/googleads/swift-package-manager-google-mobile-ads.git
+    from: "13.5.0"
 
 targets:
   MissionZebra:
@@ -26,11 +29,13 @@ targets:
       - path: MissionZebraShared
         excludes:
           - "**/.DS_Store"
+    resources:
+      - path: MissionZebra/MissionZebra.storekit
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: be.missionzebra.app
-        MARKETING_VERSION: "1.0.0"
-        CURRENT_PROJECT_VERSION: "3"
+        MARKETING_VERSION: "1.0.8"
+        CURRENT_PROJECT_VERSION: "5"
         INFOPLIST_FILE: MissionZebra/Info.plist
         SWIFT_VERSION: "5.9"
         DEVELOPMENT_TEAM: "MK69VX9ZR4"
@@ -56,6 +61,8 @@ targets:
       - package: Firebase
         product: FirebaseFunctions
       - package: GoogleSignIn
+      - package: GoogleMobileAds
+        product: GoogleMobileAds
     postCompileScripts: []
 
   MissionZebraDeviceActivityMonitor:
@@ -72,8 +79,8 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: be.missionzebra.app.deviceactivity
-        MARKETING_VERSION: "1.0.0"
-        CURRENT_PROJECT_VERSION: "3"
+        MARKETING_VERSION: "1.0.8"
+        CURRENT_PROJECT_VERSION: "5"
         INFOPLIST_FILE: MissionZebraDeviceActivityMonitor/Info.plist
         SWIFT_VERSION: "5.9"
         DEVELOPMENT_TEAM: "MK69VX9ZR4"

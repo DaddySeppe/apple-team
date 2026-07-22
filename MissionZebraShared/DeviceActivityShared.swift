@@ -17,6 +17,8 @@ enum MissionZebraDeviceActivityShared {
     static let lastEventAtKey = "missionzebra.deviceActivity.lastEventAt"
     static let permissionFallbackReasonKey = "missionzebra.deviceActivity.fallbackReason"
     static let monitorStartedAtKey = "missionzebra.deviceActivity.monitorStartedAt"
+    static let monitorSelectionSignatureKey = "missionzebra.deviceActivity.monitorSelectionSignature"
+    static let monitorScheduleVersionKey = "missionzebra.deviceActivity.monitorScheduleVersion"
     static let shieldReasonKey = "missionzebra.managedSettings.shieldReason"
 
     static func dateKey(for date: Date = Date()) -> String {

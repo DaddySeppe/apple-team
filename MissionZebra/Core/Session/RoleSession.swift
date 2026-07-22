@@ -7,15 +7,22 @@ struct RoleSession: Equatable {
     let childId: String?
     let childName: String?
 
+    var isParentLocally: Bool {
+        isLoggedIn && role == SessionManager.roleParent
+    }
+
+    var isChildLocally: Bool {
+        isLoggedIn &&
+            role == SessionManager.roleChild &&
+            !(childId ?? "").isEmpty
+    }
+
     var isParent: Bool {
-        isLoggedIn && role == SessionManager.roleParent && firebaseUid != nil
+        isParentLocally && firebaseUid != nil
     }
 
     var isChild: Bool {
-        isLoggedIn &&
-            role == SessionManager.roleChild &&
-            firebaseUid != nil &&
-            !(childId ?? "").isEmpty
+        isChildLocally && firebaseUid != nil
     }
 }
 

@@ -10,6 +10,10 @@ enum UserFacingError {
             return domainMessage
         }
 
+        if nsError.domain == "MissionZebraAccountDeletion" {
+            return nsError.localizedDescription
+        }
+
         if nsError.domain == AuthErrorDomain, let code = AuthErrorCode(rawValue: nsError.code) {
             switch code {
             case .invalidEmail:
@@ -30,6 +34,10 @@ enum UserFacingError {
                 return "Deze loginmethode is nog niet geactiveerd. Probeer een andere methode of contacteer support."
             case .accountExistsWithDifferentCredential:
                 return "Er bestaat al een account met dit e-mailadres. Log in met de oorspronkelijke methode."
+            case .requiresRecentLogin:
+                return "Bevestig opnieuw met je loginmethode en probeer je account daarna opnieuw te verwijderen."
+            case .userMismatch:
+                return "Je bevestigde met een ander account. Gebruik hetzelfde account om te verwijderen."
             default:
                 if let response = nsError.userInfo["FIRAuthErrorUserInfoDeserializedResponseKey"] as? [String: Any],
                    let message = response["message"] as? String {
